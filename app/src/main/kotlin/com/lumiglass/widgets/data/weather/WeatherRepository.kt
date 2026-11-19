@@ -122,7 +122,14 @@ class WeatherRepository(
     private fun resolveCoordinates(cityId: String, useCoarseLocation: Boolean): ResolvedLocationTarget {
         if (useCoarseLocation && hasCoarseLocationPermission()) {
             val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
-            val providers = listOf(LocationManager.NETWORK_PROVIDER, LocationManager.PASSIVE_PROVIDER)
+            val providers = mutableListOf(
+                LocationManager.NETWORK_PROVIDER,
+                LocationManager.GPS_PROVIDER,
+                LocationManager.PASSIVE_PROVIDER
+            )
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                providers.add(0, LocationManager.FUSED_PROVIDER)
+            }
             for (provider in providers) {
                 val loc = runCatching { locationManager?.getLastKnownLocation(provider) }.getOrNull()
                 if (loc != null) {

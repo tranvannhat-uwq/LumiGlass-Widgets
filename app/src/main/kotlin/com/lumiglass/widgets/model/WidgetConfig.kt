@@ -116,7 +116,7 @@ data class WidgetConfig(
     val showLunarDate: Boolean = true,
     val showWeather: Boolean = true,
     val showBatteryPercent: Boolean = true,
-    val showBatteryTemp: Boolean = true,
+    val showBatteryTemp: Boolean = false,
 
     val use24HourFormat: Boolean = true,
     val showSeconds: Boolean = false,
@@ -164,7 +164,7 @@ data class WidgetConfig(
     val contentAlignment: ContentAlignmentOption = ContentAlignmentOption.START,
 
     // 4. Tab Dữ liệu (Data & Refresh)
-    val useCoarseLocation: Boolean = false,
+    val useCoarseLocation: Boolean = true,
     val cityId: String = "hanoi",
     val temperatureUnit: TemperatureUnit = TemperatureUnit.CELSIUS,
     val weatherRefreshMinutes: Int = 60,

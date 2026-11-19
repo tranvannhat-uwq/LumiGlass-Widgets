@@ -510,7 +510,7 @@ fun LiveWidgetGlassCard(
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                             }
-                            if (config.showLunarDate) {
+                            if (config.showLunarDate && !config.showWeekCalendarStrip) {
                                 Text(
                                     text = snapshot.lunarDateInfo.formatDisplay(
                                         showCanChi = config.showCanChi,
@@ -636,7 +636,7 @@ fun LiveWidgetGlassCard(
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                             }
-                            if (config.showLunarDate) {
+                            if (config.showLunarDate && !config.showWeekCalendarStrip) {
                                 Text(
                                     text = snapshot.lunarDateInfo.formatDisplay(
                                         showCanChi = config.showCanChi,

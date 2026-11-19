@@ -5,6 +5,7 @@ import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Typeface
+import android.net.Uri
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.style.StyleSpan
@@ -183,6 +184,10 @@ object WidgetRemoteViewsRenderer {
         )
         views.setOnClickPendingIntent(R.id.widget_root, pendingIntent)
 
+        // 7b. Attach Weather App launcher to Weather module container (opens system/installed weather app)
+        val weatherPendingIntent = createWeatherAppPendingIntent(context, appWidgetId)
+        views.setOnClickPendingIntent(R.id.widget_weather_container, weatherPendingIntent)
+
         return views
     }
 
@@ -287,6 +292,12 @@ object WidgetRemoteViewsRenderer {
             }
         }
 
+        // In rectangular widgets with bottom week calendar strip, the lunar date is already displayed in the bottom strip.
+        // Therefore, hide the duplicate upper lunar text under the temperature.
+        val hasBottomStrip = config.showWeekCalendarStrip &&
+            (tier == WidgetSizeTier.ESSENTIAL_4X2 || tier == WidgetSizeTier.PREMIUM_4X3 || tier == WidgetSizeTier.DASHBOARD_4X4)
+        val showUpperLunar = config.showLunarDate && !hasBottomStrip
+
         // Check user's module priority ordering between GREGORIAN_DATE and LUNAR_DATE
         val dateIdx = config.moduleOrder.indexOf(WidgetModuleType.GREGORIAN_DATE)
         val lunarIdx = config.moduleOrder.indexOf(WidgetModuleType.LUNAR_DATE)
@@ -302,7 +313,7 @@ object WidgetRemoteViewsRenderer {
                 views.setViewVisibility(R.id.widget_date_text, View.GONE)
             }
 
-            if (config.showLunarDate) {
+            if (showUpperLunar) {
                 views.setViewVisibility(R.id.widget_lunar_text, View.VISIBLE)
                 views.setTextViewText(R.id.widget_lunar_text, applyTypographySpans(lunarString, config, isHeader = false))
                 views.setTextViewTextSize(R.id.widget_lunar_text, TypedValue.COMPLEX_UNIT_SP, lunarSp)
@@ -312,7 +323,7 @@ object WidgetRemoteViewsRenderer {
             }
         } else {
             // User prioritized Lunar Date above Gregorian Date
-            if (config.showLunarDate) {
+            if (showUpperLunar) {
                 views.setViewVisibility(R.id.widget_date_text, View.VISIBLE)
                 views.setTextViewText(R.id.widget_date_text, applyTypographySpans(lunarString, config, isHeader = false))
                 views.setTextViewTextSize(R.id.widget_date_text, TypedValue.COMPLEX_UNIT_SP, dateSp)
@@ -645,5 +656,63 @@ object WidgetRemoteViewsRenderer {
             )
         }
         return spannable
+    }
+
+    /**
+     * Resolves and creates a [PendingIntent] to launch the device's installed Weather app
+     * (e.g. Samsung Weather, Xiaomi Weather, ColorOS, Pixel Weather, or Google Weather).
+     * Falls back to opening Widget Studio if no dedicated weather app is found.
+     */
+    private fun createWeatherAppPendingIntent(context: Context, appWidgetId: Int): PendingIntent {
+        val pm = context.packageManager
+        val candidatePackages = listOf(
+            "com.sec.android.daemonapp",              // Samsung Weather
+            "com.miui.weather2",                      // Xiaomi / Redmi / POCO
+            "com.coloros.weather.service",            // OPPO / Realme
+            "com.coloros.weather2",                   // ColorOS
+            "com.vivo.weather",                       // Vivo
+            "com.huawei.android.totemweather",        // Huawei
+            "com.asus.weather",                       // Asus
+            "com.lenovo.weather",                     // Lenovo / Motorola
+            "com.google.android.apps.weather",        // Google Weather app (Pixel)
+            "com.accuweather.android",                // AccuWeather
+            "com.weather.Weather",                    // The Weather Channel
+            "com.yahoo.mobile.client.android.weather" // Yahoo Weather
+        )
+
+        var targetIntent: Intent? = null
+        for (pkg in candidatePackages) {
+            val launch = runCatching { pm.getLaunchIntentForPackage(pkg) }.getOrNull()
+            if (launch != null) {
+                targetIntent = launch
+                break
+            }
+        }
+
+        if (targetIntent == null) {
+            val webIntent = Intent(Intent.ACTION_VIEW).apply {
+                data = Uri.parse("https://www.google.com/search?q=thời+tiết")
+            }
+            if (webIntent.resolveActivity(pm) != null) {
+                targetIntent = webIntent
+            }
+        }
+
+        if (targetIntent == null) {
+            targetIntent = Intent(context, MainActivity::class.java).apply {
+                putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                putExtra(MainActivity.EXTRA_OPEN_STUDIO_DIRECTLY, true)
+            }
+        }
+
+        targetIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        return PendingIntent.getActivity(
+            context,
+            appWidgetId + 20_000,
+            targetIntent,
+            flags
+        )
     }
 }
