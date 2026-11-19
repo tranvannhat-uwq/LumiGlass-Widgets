@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:configure="com.lumiglass.widgets.MainActivity"
+    android:description="@string/widget_desc_4x4"
+    android:initialLayout="@layout/widget_layout_4x4"
+    android:minWidth="260dp"
+    android:minHeight="260dp"
+    android:minResizeWidth="140dp"
+    android:minResizeHeight="110dp"
+    android:previewImage="@drawable/widget_preview_glass"
+    android:previewLayout="@layout/widget_layout_4x4"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="4"
+    android:targetCellHeight="4"
+    android:updatePeriodMillis="1800000"
+    android:widgetCategory="home_screen"
+    android:widgetFeatures="reconfigurable|configuration_optional" />

@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">LumiGlass Widgets</string>
+
+    <string name="widget_label_2x1">LumiGlass 2×1 • Mini Clock</string>
+    <string name="widget_desc_2x1">Đồng hồ kính lỏng và lịch âm dương siêu gọn (2×1)</string>
+
+    <string name="widget_label_2x2">LumiGlass 2×2 • Compact Glass</string>
+    <string name="widget_desc_2x2">Đồng hồ lớn, ngày dương, âm lịch Việt Nam và thời tiết/pin (2×2)</string>
+
+    <string name="widget_label_4x2">LumiGlass 4×2 • Essential Glass</string>
+    <string name="widget_desc_4x2">Đồng hồ lớn bên trái, thời tiết, âm lịch và nhiệt độ pin bên phải (4×2)</string>
+
+    <string name="widget_label_4x3">LumiGlass 4×3 • Premium Glass</string>
+    <string name="widget_desc_4x3">Bố cục kính lỏng cao cấp với đồng hồ, âm lịch Can Chi, thời tiết và pin (4×3)</string>
+
+    <string name="widget_label_4x4">LumiGlass 4×4 • Dashboard Glass</string>
+    <string name="widget_desc_4x4">Bảng điều khiển kính lỏng toàn diện: đồng hồ, lịch âm, trạm thời tiết và nhiệt độ pin (4×4)</string>
+</resources>
