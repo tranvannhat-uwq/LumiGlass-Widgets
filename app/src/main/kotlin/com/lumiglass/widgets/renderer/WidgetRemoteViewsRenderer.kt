@@ -157,7 +157,18 @@ object WidgetRemoteViewsRenderer {
             secondaryTextArgb = palette.secondaryTextArgb
         )
 
-        // 6b. Configure Bottom 5-Day / 7-Day Solar & Lunar Calendar Strip (for 4x2, 4x3, 4x4)
+        // 6b. Configure Real-Time RAM Status Module (for 4x3 & 4x4)
+        bindRamViews(
+            views = views,
+            tier = tier,
+            scaleFactor = metrics.scaleFactor,
+            config = config,
+            snapshot = snapshot,
+            primaryTextArgb = palette.primaryTextArgb,
+            secondaryTextArgb = palette.secondaryTextArgb
+        )
+
+        // 6c. Configure Bottom 5-Day / 7-Day Solar & Lunar Calendar Strip (for 4x2, 4x3, 4x4)
         bindWeekCalendarStripViews(
             views = views,
             tier = tier,
@@ -210,7 +221,7 @@ object WidgetRemoteViewsRenderer {
             TimezoneMode.SYSTEM -> null
         }
 
-        val combinedScale = (scaleFactor * config.textScale).coerceIn(0.68f, 1.38f)
+        val combinedScale = (scaleFactor * config.textScale * config.clockScale).coerceIn(0.55f, 1.65f)
         val secondsFactor = if (config.showSeconds) 0.78f else 1.0f
 
         val baseSingleSp = when (tier) {
@@ -268,7 +279,7 @@ object WidgetRemoteViewsRenderer {
         secondaryTextArgb: Int,
         accentTextArgb: Int
     ) {
-        val combinedScale = (scaleFactor * config.textScale).coerceIn(0.72f, 1.32f)
+        val combinedScale = (scaleFactor * config.textScale * config.dateScale).coerceIn(0.55f, 1.55f)
         val dateSp = when (tier) {
             WidgetSizeTier.MINI_2X1 -> 11f
             WidgetSizeTier.COMPACT_2X2 -> 12f
@@ -387,7 +398,7 @@ object WidgetRemoteViewsRenderer {
             "${weather.cityNameVi} • Chưa có dữ liệu"
         }
 
-        val combinedScale = (scaleFactor * config.textScale).coerceIn(0.75f, 1.30f)
+        val combinedScale = (scaleFactor * config.textScale * config.weatherScale).coerceIn(0.60f, 1.50f)
         val tempSp = when (tier) {
             WidgetSizeTier.COMPACT_2X2 -> 12.5f
             WidgetSizeTier.ESSENTIAL_4X2 -> 15.5f
@@ -466,7 +477,7 @@ object WidgetRemoteViewsRenderer {
 
         views.setViewVisibility(R.id.widget_battery_container, View.VISIBLE)
         val battery = snapshot.batteryInfo
-        val combinedScale = (scaleFactor * config.textScale).coerceIn(0.75f, 1.28f)
+        val combinedScale = (scaleFactor * config.textScale * config.batteryScale).coerceIn(0.60f, 1.50f)
 
         if (config.showBatteryPercent) {
             views.setViewVisibility(R.id.widget_battery_gauge, View.VISIBLE)
@@ -533,6 +544,40 @@ object WidgetRemoteViewsRenderer {
         }
     }
 
+    private fun bindRamViews(
+        views: RemoteViews,
+        tier: WidgetSizeTier,
+        scaleFactor: Float,
+        config: WidgetConfig,
+        snapshot: WidgetDataSnapshot,
+        primaryTextArgb: Int,
+        secondaryTextArgb: Int
+    ) {
+        val showRam = config.showRamStatus && (tier == WidgetSizeTier.PREMIUM_4X3 || tier == WidgetSizeTier.DASHBOARD_4X4)
+        if (!showRam) {
+            views.setViewVisibility(R.id.widget_ram_container, View.GONE)
+            return
+        }
+
+        views.setViewVisibility(R.id.widget_ram_container, View.VISIBLE)
+        val ram = snapshot.ramInfo
+        val text = if (tier == WidgetSizeTier.DASHBOARD_4X4) {
+            ram.formatDetailed()
+        } else {
+            ram.formatMedium()
+        }
+
+        val combinedScale = (scaleFactor * config.textScale * config.ramScale).coerceIn(0.60f, 1.45f)
+        val ramSp = when (tier) {
+            WidgetSizeTier.DASHBOARD_4X4 -> 12f
+            else -> 11f
+        } * combinedScale
+
+        views.setTextViewText(R.id.widget_ram_text, applyTypographySpans(text, config, isHeader = false))
+        views.setTextViewTextSize(R.id.widget_ram_text, TypedValue.COMPLEX_UNIT_SP, ramSp)
+        views.setTextColor(R.id.widget_ram_text, secondaryTextArgb)
+    }
+
     private data class CalendarColViewIds(
         val boxId: Int,
         val weekdayId: Int,
@@ -570,7 +615,7 @@ object WidgetRemoteViewsRenderer {
 
         views.setViewVisibility(R.id.widget_week_strip_container, View.VISIBLE)
         val useSevenDays = config.weekCalendarDayCount >= 7
-        val combinedScale = (scaleFactor * config.textScale).coerceIn(0.76f, 1.24f)
+        val combinedScale = (scaleFactor * config.textScale * config.calendarStripScale).coerceIn(0.60f, 1.45f)
 
         val baseWeekdaySp = when (tier) {
             WidgetSizeTier.ESSENTIAL_4X2 -> 9.2f

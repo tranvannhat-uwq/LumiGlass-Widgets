@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -114,10 +115,20 @@ fun WallpaperStageWidgetPreview(
     wallpaper: SimulatedWallpaper,
     onWallpaperChange: (SimulatedWallpaper) -> Unit,
     onSizeTierChange: ((WidgetSizeTier) -> Unit)? = null,
+    isCompact: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val tier = config.preferredSizeTier
     val effectiveSnapshot = snapshot.copy(isSystemDarkTheme = wallpaper.isDark)
+    val previewScale = if (isCompact) {
+        when (tier) {
+            WidgetSizeTier.MINI_2X1 -> 0.88f
+            WidgetSizeTier.COMPACT_2X2 -> 0.74f
+            WidgetSizeTier.ESSENTIAL_4X2 -> 0.74f
+            WidgetSizeTier.PREMIUM_4X3 -> 0.64f
+            WidgetSizeTier.DASHBOARD_4X4 -> 0.55f
+        }
+    } else 1.0f
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -127,14 +138,17 @@ fun WallpaperStageWidgetPreview(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(28.dp))
+                .clip(RoundedCornerShape(if (isCompact) 20.dp else 28.dp))
                 .background(Brush.linearGradient(wallpaper.gradientColors))
                 .border(
                     width = 1.dp,
                     color = Color.White.copy(alpha = 0.16f),
-                    shape = RoundedCornerShape(28.dp)
+                    shape = RoundedCornerShape(if (isCompact) 20.dp else 28.dp)
                 )
-                .padding(horizontal = 16.dp, vertical = 18.dp),
+                .padding(
+                    horizontal = if (isCompact) 10.dp else 16.dp,
+                    vertical = if (isCompact) 8.dp else 18.dp
+                ),
             contentAlignment = Alignment.Center
         ) {
             // Decorative background orbs to demonstrate glass translucency & edge refraction
@@ -168,13 +182,15 @@ fun WallpaperStageWidgetPreview(
             LiveWidgetGlassCard(
                 config = config,
                 snapshot = effectiveSnapshot,
-                tier = tier
+                tier = tier,
+                previewScale = previewScale
             )
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        if (!isCompact) {
+            Spacer(modifier = Modifier.height(10.dp))
 
-        // Wallpaper Simulator & Size Switcher Controls
+            // Wallpaper Simulator & Size Switcher Controls
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -256,6 +272,7 @@ fun WallpaperStageWidgetPreview(
             }
         }
     }
+}
 }
 
 /**
@@ -460,30 +477,34 @@ fun LiveWidgetGlassCard(
                             horizontalAlignment = Alignment.Start
                         ) {
                             if (config.showClock) {
-                                PreviewClockText(
-                                    config = config,
-                                    snapshot = snapshot,
-                                    baseSp = 34f * previewScale,
-                                    primaryColor = primaryColor,
-                                    accentColor = accentColor,
-                                    paletteShadowArgb = palette.shadowTextArgb,
-                                    horizontalSplit = true
-                                )
+                                Box(modifier = Modifier.offset(y = config.clockOffsetY.dp)) {
+                                    PreviewClockText(
+                                        config = config,
+                                        snapshot = snapshot,
+                                        baseSp = 34f * previewScale,
+                                        primaryColor = primaryColor,
+                                        accentColor = accentColor,
+                                        paletteShadowArgb = palette.shadowTextArgb,
+                                        horizontalSplit = true
+                                    )
+                                }
                             }
                             if (config.showGregorianDate) {
                                 Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = snapshot.gregorianDateText,
-                                    style = buildGlassTextStyle(
-                                        config = config,
-                                        fontSize = (11f * previewScale * config.textScale).sp,
-                                        color = secondaryColor,
-                                        shadowArgb = palette.shadowTextArgb,
-                                        isHeader = false
-                                    ),
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis
-                                )
+                                Box(modifier = Modifier.offset(y = config.dateOffsetY.dp)) {
+                                    Text(
+                                        text = snapshot.gregorianDateText,
+                                        style = buildGlassTextStyle(
+                                            config = config,
+                                            fontSize = (11f * previewScale * config.textScale * config.dateScale).sp,
+                                            color = secondaryColor,
+                                            shadowArgb = palette.shadowTextArgb,
+                                            isHeader = false
+                                        ),
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
                             }
                         }
 
@@ -496,18 +517,20 @@ fun LiveWidgetGlassCard(
                             horizontalAlignment = Alignment.Start
                         ) {
                             if (config.showWeather) {
-                                PreviewWeatherCluster(
-                                    config = config,
-                                    snapshot = snapshot,
-                                    iconSizeDp = (24 * previewScale).dp,
-                                    tempSp = 14.5f * previewScale,
-                                    condSp = 10f * previewScale,
-                                    showDetails = true,
-                                    primaryColor = primaryColor,
-                                    secondaryColor = secondaryColor,
-                                    palettePrimaryArgb = palette.primaryTextArgb,
-                                    paletteShadowArgb = palette.shadowTextArgb
-                                )
+                                Box(modifier = Modifier.offset(y = config.weatherOffsetY.dp)) {
+                                    PreviewWeatherCluster(
+                                        config = config,
+                                        snapshot = snapshot,
+                                        iconSizeDp = (24 * previewScale).dp,
+                                        tempSp = 14.5f * previewScale,
+                                        condSp = 10f * previewScale,
+                                        showDetails = true,
+                                        primaryColor = primaryColor,
+                                        secondaryColor = secondaryColor,
+                                        palettePrimaryArgb = palette.primaryTextArgb,
+                                        paletteShadowArgb = palette.shadowTextArgb
+                                    )
+                                }
                                 Spacer(modifier = Modifier.height(2.dp))
                             }
                             if (config.showLunarDate && !config.showWeekCalendarStrip) {
@@ -529,16 +552,18 @@ fun LiveWidgetGlassCard(
                                 Spacer(modifier = Modifier.height(2.dp))
                             }
                             if (config.batteryMonitoringEnabled && (config.showBatteryPercent || config.showBatteryTemp)) {
-                                PreviewBatteryCluster(
-                                    config = config,
-                                    snapshot = snapshot,
-                                    tier = tier,
-                                    textSp = 10.5f * previewScale,
-                                    primaryColor = primaryColor,
-                                    secondaryColor = secondaryColor,
-                                    palettePrimaryArgb = palette.primaryTextArgb,
-                                    paletteShadowArgb = palette.shadowTextArgb
-                                )
+                                Box(modifier = Modifier.offset(y = config.batteryOffsetY.dp)) {
+                                    PreviewBatteryCluster(
+                                        config = config,
+                                        snapshot = snapshot,
+                                        tier = tier,
+                                        textSp = 10.5f * previewScale,
+                                        primaryColor = primaryColor,
+                                        secondaryColor = secondaryColor,
+                                        palettePrimaryArgb = palette.primaryTextArgb,
+                                        paletteShadowArgb = palette.shadowTextArgb
+                                    )
+                                }
                             }
                         }
                     }
@@ -588,30 +613,34 @@ fun LiveWidgetGlassCard(
                             verticalArrangement = Arrangement.Center
                         ) {
                             if (config.showClock) {
-                                PreviewClockText(
-                                    config = config,
-                                    snapshot = snapshot,
-                                    baseSp = 40f * previewScale,
-                                    primaryColor = primaryColor,
-                                    accentColor = accentColor,
-                                    paletteShadowArgb = palette.shadowTextArgb,
-                                    horizontalSplit = true
-                                )
+                                Box(modifier = Modifier.offset(y = config.clockOffsetY.dp)) {
+                                    PreviewClockText(
+                                        config = config,
+                                        snapshot = snapshot,
+                                        baseSp = 40f * previewScale,
+                                        primaryColor = primaryColor,
+                                        accentColor = accentColor,
+                                        paletteShadowArgb = palette.shadowTextArgb,
+                                        horizontalSplit = true
+                                    )
+                                }
                             }
                             if (config.showGregorianDate) {
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = snapshot.gregorianDateText,
-                                    style = buildGlassTextStyle(
-                                        config = config,
-                                        fontSize = (12.5f * previewScale * config.textScale).sp,
-                                        color = secondaryColor,
-                                        shadowArgb = palette.shadowTextArgb,
-                                        isHeader = false
-                                    ),
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis
-                                )
+                                Box(modifier = Modifier.offset(y = config.dateOffsetY.dp)) {
+                                    Text(
+                                        text = snapshot.gregorianDateText,
+                                        style = buildGlassTextStyle(
+                                            config = config,
+                                            fontSize = (12.5f * previewScale * config.textScale * config.dateScale).sp,
+                                            color = secondaryColor,
+                                            shadowArgb = palette.shadowTextArgb,
+                                            isHeader = false
+                                        ),
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
                             }
                         }
 
@@ -622,18 +651,20 @@ fun LiveWidgetGlassCard(
                             verticalArrangement = Arrangement.Center
                         ) {
                             if (config.showWeather) {
-                                PreviewWeatherCluster(
-                                    config = config,
-                                    snapshot = snapshot,
-                                    iconSizeDp = (30 * previewScale).dp,
-                                    tempSp = 16.5f * previewScale,
-                                    condSp = 11f * previewScale,
-                                    showDetails = true,
-                                    primaryColor = primaryColor,
-                                    secondaryColor = secondaryColor,
-                                    palettePrimaryArgb = palette.primaryTextArgb,
-                                    paletteShadowArgb = palette.shadowTextArgb
-                                )
+                                Box(modifier = Modifier.offset(y = config.weatherOffsetY.dp)) {
+                                    PreviewWeatherCluster(
+                                        config = config,
+                                        snapshot = snapshot,
+                                        iconSizeDp = (30 * previewScale).dp,
+                                        tempSp = 16.5f * previewScale,
+                                        condSp = 11f * previewScale,
+                                        showDetails = true,
+                                        primaryColor = primaryColor,
+                                        secondaryColor = secondaryColor,
+                                        palettePrimaryArgb = palette.primaryTextArgb,
+                                        paletteShadowArgb = palette.shadowTextArgb
+                                    )
+                                }
                                 Spacer(modifier = Modifier.height(4.dp))
                             }
                             if (config.showLunarDate && !config.showWeekCalendarStrip) {
@@ -655,16 +686,31 @@ fun LiveWidgetGlassCard(
                                 Spacer(modifier = Modifier.height(4.dp))
                             }
                             if (config.batteryMonitoringEnabled && (config.showBatteryPercent || config.showBatteryTemp)) {
-                                PreviewBatteryCluster(
-                                    config = config,
-                                    snapshot = snapshot,
-                                    tier = tier,
-                                    textSp = 11.5f * previewScale,
-                                    primaryColor = primaryColor,
-                                    secondaryColor = secondaryColor,
-                                    palettePrimaryArgb = palette.primaryTextArgb,
-                                    paletteShadowArgb = palette.shadowTextArgb
-                                )
+                                Box(modifier = Modifier.offset(y = config.batteryOffsetY.dp)) {
+                                    PreviewBatteryCluster(
+                                        config = config,
+                                        snapshot = snapshot,
+                                        tier = tier,
+                                        textSp = 11.5f * previewScale * config.batteryScale,
+                                        primaryColor = primaryColor,
+                                        secondaryColor = secondaryColor,
+                                        palettePrimaryArgb = palette.primaryTextArgb,
+                                        paletteShadowArgb = palette.shadowTextArgb
+                                    )
+                                }
+                            }
+                            if (config.showRamStatus) {
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Box(modifier = Modifier.offset(y = config.ramOffsetY.dp)) {
+                                    PreviewRamCluster(
+                                        config = config,
+                                        snapshot = snapshot,
+                                        tier = tier,
+                                        previewScale = previewScale,
+                                        secondaryColor = secondaryColor,
+                                        palette = palette
+                                    )
+                                }
                             }
                         }
                     }
@@ -709,31 +755,35 @@ fun LiveWidgetGlassCard(
                         horizontalAlignment = horizontalAlign
                     ) {
                         if (config.showClock) {
-                            PreviewClockText(
-                                config = config,
-                                snapshot = snapshot,
-                                baseSp = 44f * previewScale,
-                                primaryColor = primaryColor,
-                                accentColor = accentColor,
-                                paletteShadowArgb = palette.shadowTextArgb,
-                                horizontalSplit = true
-                            )
+                            Box(modifier = Modifier.offset(y = config.clockOffsetY.dp)) {
+                                PreviewClockText(
+                                    config = config,
+                                    snapshot = snapshot,
+                                    baseSp = 44f * previewScale,
+                                    primaryColor = primaryColor,
+                                    accentColor = accentColor,
+                                    paletteShadowArgb = palette.shadowTextArgb,
+                                    horizontalSplit = true
+                                )
+                            }
                         }
                         Spacer(modifier = Modifier.height(2.dp))
-                        PreviewDateAndLunarLines(
-                            config = config,
-                            snapshot = snapshot,
-                            tier = tier,
-                            dateSp = 13.5f * previewScale,
-                            lunarSp = 11.8f * previewScale,
-                            secondaryColor = secondaryColor,
-                            accentColor = accentColor,
-                            paletteShadowArgb = palette.shadowTextArgb,
-                            textAlign = textAlign
-                        )
+                        Box(modifier = Modifier.offset(y = config.dateOffsetY.dp)) {
+                            PreviewDateAndLunarLines(
+                                config = config,
+                                snapshot = snapshot,
+                                tier = tier,
+                                dateSp = 13.5f * previewScale,
+                                lunarSp = 11.8f * previewScale,
+                                secondaryColor = secondaryColor,
+                                accentColor = accentColor,
+                                paletteShadowArgb = palette.shadowTextArgb,
+                                textAlign = textAlign
+                            )
+                        }
                     }
 
-                    // Zone 2 (34%): Weather Station + Battery Telemetry
+                    // Zone 2 (34%): Weather Station + Battery Telemetry + RAM
                     Column(
                         modifier = Modifier
                             .weight(0.34f)
@@ -741,32 +791,49 @@ fun LiveWidgetGlassCard(
                         verticalArrangement = Arrangement.Center
                     ) {
                         if (config.showWeather) {
-                            PreviewWeatherCluster(
-                                config = config,
-                                snapshot = snapshot,
-                                iconSizeDp = (32 * previewScale).dp,
-                                tempSp = 18f * previewScale,
-                                condSp = 11.8f * previewScale,
-                                showDetails = true,
-                                primaryColor = primaryColor,
-                                secondaryColor = secondaryColor,
-                                palettePrimaryArgb = palette.primaryTextArgb,
-                                paletteShadowArgb = palette.shadowTextArgb
-                            )
+                            Box(modifier = Modifier.offset(y = config.weatherOffsetY.dp)) {
+                                PreviewWeatherCluster(
+                                    config = config,
+                                    snapshot = snapshot,
+                                    iconSizeDp = (32 * previewScale).dp,
+                                    tempSp = 18f * previewScale,
+                                    condSp = 11.8f * previewScale,
+                                    showDetails = true,
+                                    primaryColor = primaryColor,
+                                    secondaryColor = secondaryColor,
+                                    palettePrimaryArgb = palette.primaryTextArgb,
+                                    paletteShadowArgb = palette.shadowTextArgb
+                                )
+                            }
                         }
                         if (config.batteryMonitoringEnabled && (config.showBatteryPercent || config.showBatteryTemp)) {
                             Spacer(modifier = Modifier.height(5.dp))
-                            PreviewBatteryCluster(
-                                config = config,
-                                snapshot = snapshot,
-                                tier = tier,
-                                textSp = 12.5f * previewScale,
-                                primaryColor = primaryColor,
-                                secondaryColor = secondaryColor,
-                                palettePrimaryArgb = palette.primaryTextArgb,
-                                paletteShadowArgb = palette.shadowTextArgb,
-                                expandFullRow = true
-                            )
+                            Box(modifier = Modifier.offset(y = config.batteryOffsetY.dp)) {
+                                PreviewBatteryCluster(
+                                    config = config,
+                                    snapshot = snapshot,
+                                    tier = tier,
+                                    textSp = 12.5f * previewScale * config.batteryScale,
+                                    primaryColor = primaryColor,
+                                    secondaryColor = secondaryColor,
+                                    palettePrimaryArgb = palette.primaryTextArgb,
+                                    paletteShadowArgb = palette.shadowTextArgb,
+                                    expandFullRow = true
+                                )
+                            }
+                        }
+                        if (config.showRamStatus) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Box(modifier = Modifier.offset(y = config.ramOffsetY.dp)) {
+                                PreviewRamCluster(
+                                    config = config,
+                                    snapshot = snapshot,
+                                    tier = tier,
+                                    previewScale = previewScale,
+                                    secondaryColor = secondaryColor,
+                                    palette = palette
+                                )
+                            }
                         }
                     }
 
@@ -806,7 +873,7 @@ private fun PreviewClockText(
     horizontalSplit: Boolean
 ) {
     val secFactor = if (config.showSeconds) 0.78f else 1.0f
-    val effSp = (baseSp * config.textScale * secFactor).coerceIn(16f, 64f)
+    val effSp = (baseSp * config.textScale * config.clockScale * secFactor).coerceIn(14f, 72f)
 
     if (!config.splitClockTwoLines) {
         val display = buildString {
@@ -907,7 +974,7 @@ private fun PreviewDateAndLunarLines(
                 text = snapshot.gregorianDateText,
                 style = buildGlassTextStyle(
                     config = config,
-                    fontSize = (dateSp * config.textScale).sp,
+                    fontSize = (dateSp * config.textScale * config.dateScale).sp,
                     color = secondaryColor,
                     shadowArgb = paletteShadowArgb,
                     isHeader = false
@@ -922,7 +989,7 @@ private fun PreviewDateAndLunarLines(
                 text = lunarText,
                 style = buildGlassTextStyle(
                     config = config,
-                    fontSize = (lunarSp * config.textScale).sp,
+                    fontSize = (lunarSp * config.textScale * config.dateScale).sp,
                     color = accentColor,
                     shadowArgb = paletteShadowArgb,
                     isHeader = false
@@ -938,7 +1005,7 @@ private fun PreviewDateAndLunarLines(
                 text = lunarText,
                 style = buildGlassTextStyle(
                     config = config,
-                    fontSize = (dateSp * config.textScale).sp,
+                    fontSize = (dateSp * config.textScale * config.dateScale).sp,
                     color = accentColor,
                     shadowArgb = paletteShadowArgb,
                     isHeader = false
@@ -953,7 +1020,7 @@ private fun PreviewDateAndLunarLines(
                 text = snapshot.gregorianDateText,
                 style = buildGlassTextStyle(
                     config = config,
-                    fontSize = (lunarSp * config.textScale).sp,
+                    fontSize = (lunarSp * config.textScale * config.dateScale).sp,
                     color = secondaryColor,
                     shadowArgb = paletteShadowArgb,
                     isHeader = false
@@ -980,7 +1047,7 @@ private fun PreviewWeatherCluster(
     paletteShadowArgb: Int
 ) {
     val weather = snapshot.weatherInfo
-    val scaledIconDp = (iconSizeDp.value * config.iconScale).dp
+    val scaledIconDp = (iconSizeDp.value * config.iconScale * config.weatherScale).dp
 
     Row(verticalAlignment = Alignment.CenterVertically) {
         Canvas(modifier = Modifier.size(scaledIconDp)) {
@@ -1001,7 +1068,7 @@ private fun PreviewWeatherCluster(
                     text = weather.formatTemp(weather.currentTempC, config.temperatureUnit),
                     style = buildGlassTextStyle(
                         config = config,
-                        fontSize = (tempSp * config.textScale).sp,
+                        fontSize = (tempSp * config.textScale * config.weatherScale).sp,
                         color = primaryColor,
                         shadowArgb = paletteShadowArgb,
                         isHeader = true
@@ -1013,7 +1080,7 @@ private fun PreviewWeatherCluster(
                     else "${weather.cityNameVi} • Chưa có dữ liệu",
                     style = buildGlassTextStyle(
                         config = config,
-                        fontSize = (condSp * config.textScale).sp,
+                        fontSize = (condSp * config.textScale * config.weatherScale).sp,
                         color = secondaryColor,
                         shadowArgb = paletteShadowArgb,
                         isHeader = false
@@ -1045,7 +1112,7 @@ private fun PreviewWeatherCluster(
                         text = detailParts.joinToString(" • "),
                         style = buildGlassTextStyle(
                             config = config,
-                            fontSize = ((condSp * 0.90f) * config.textScale).sp,
+                            fontSize = ((condSp * 0.90f) * config.textScale * config.weatherScale).sp,
                             color = secondaryColor.copy(alpha = 0.85f),
                             shadowArgb = paletteShadowArgb,
                             isHeader = false
@@ -1073,12 +1140,14 @@ private fun PreviewBatteryCluster(
     expandFullRow: Boolean = false
 ) {
     val battery = snapshot.batteryInfo
-    val (gaugeW, gaugeH) = when (config.batteryStyle) {
+    val (rawW, rawH) = when (config.batteryStyle) {
         BatteryDisplayStyle.PILL -> 34.dp to 16.dp
         BatteryDisplayStyle.CIRCLE -> 22.dp to 22.dp
         BatteryDisplayStyle.PROGRESS_BAR -> 46.dp to 12.dp
         BatteryDisplayStyle.ICON_NUMBER -> 16.dp to 18.dp
     }
+    val gaugeW = (rawW.value * config.batteryScale).dp
+    val gaugeH = (rawH.value * config.batteryScale).dp
     val pctArgb = GlassIconRenderer.resolveBatteryLevelColorArgb(
         levelPercent = battery.levelPercent,
         isCharging = battery.isCharging,
@@ -1119,7 +1188,7 @@ private fun PreviewBatteryCluster(
                         text = (if (battery.isCharging) "⚡ " else "") + battery.formatPercent(),
                         style = buildGlassTextStyle(
                             config = config,
-                            fontSize = (textSp * config.textScale).sp,
+                            fontSize = (textSp * config.textScale * config.batteryScale).sp,
                             color = Color(pctArgb),
                             shadowArgb = paletteShadowArgb,
                             isHeader = true
@@ -1133,7 +1202,7 @@ private fun PreviewBatteryCluster(
                     text = tempText,
                     style = buildGlassTextStyle(
                         config = config,
-                        fontSize = ((textSp * 0.90f) * config.textScale).sp,
+                        fontSize = ((textSp * 0.90f) * config.textScale * config.batteryScale).sp,
                         color = if (config.warnBatteryTempByColor) Color(tempArgb) else secondaryColor,
                         shadowArgb = paletteShadowArgb,
                         isHeader = false
@@ -1168,7 +1237,7 @@ private fun PreviewBatteryCluster(
                         text = (if (battery.isCharging) "⚡ " else "") + battery.formatPercent(),
                         style = buildGlassTextStyle(
                             config = config,
-                            fontSize = (textSp * config.textScale).sp,
+                            fontSize = (textSp * config.textScale * config.batteryScale).sp,
                             color = Color(pctArgb),
                             shadowArgb = paletteShadowArgb,
                             isHeader = true
@@ -1184,7 +1253,7 @@ private fun PreviewBatteryCluster(
                     text = tempText,
                     style = buildGlassTextStyle(
                         config = config,
-                        fontSize = ((textSp * 0.92f) * config.textScale).sp,
+                        fontSize = ((textSp * 0.92f) * config.textScale * config.batteryScale).sp,
                         color = if (config.warnBatteryTempByColor) Color(tempArgb) else secondaryColor,
                         shadowArgb = paletteShadowArgb,
                         isHeader = false
@@ -1305,7 +1374,7 @@ private fun PreviewWeekCalendarStrip(
                     text = col.weekdayShortVi,
                     style = buildGlassTextStyle(
                         config = config,
-                        fontSize = (9.2f * previewScale * config.textScale).sp,
+                        fontSize = (9.2f * previewScale * config.textScale * config.calendarStripScale).sp,
                         color = if (col.isToday) primaryColor else secondaryColor,
                         shadowArgb = paletteShadowArgb,
                         isHeader = col.isToday
@@ -1316,7 +1385,7 @@ private fun PreviewWeekCalendarStrip(
                     text = col.solarDayString,
                     style = buildGlassTextStyle(
                         config = config,
-                        fontSize = ((if (col.isToday) 13.8f else 12.6f) * previewScale * config.textScale).sp,
+                        fontSize = ((if (col.isToday) 13.8f else 12.6f) * previewScale * config.textScale * config.calendarStripScale).sp,
                         color = primaryColor,
                         shadowArgb = paletteShadowArgb,
                         isHeader = true
@@ -1328,7 +1397,7 @@ private fun PreviewWeekCalendarStrip(
                         text = col.lunarDayMonthString,
                         style = buildGlassTextStyle(
                             config = config,
-                            fontSize = (8.8f * previewScale * config.textScale).sp,
+                            fontSize = (8.8f * previewScale * config.textScale * config.calendarStripScale).sp,
                             color = if (col.isToday) accentColor else secondaryColor,
                             shadowArgb = paletteShadowArgb,
                             isHeader = col.isToday
@@ -1338,5 +1407,53 @@ private fun PreviewWeekCalendarStrip(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun PreviewRamCluster(
+    config: WidgetConfig,
+    snapshot: WidgetDataSnapshot,
+    tier: WidgetSizeTier,
+    previewScale: Float,
+    secondaryColor: Color,
+    palette: GlassSurfaceRenderer.EffectiveGlassPalette,
+    modifier: Modifier = Modifier
+) {
+    val ram = snapshot.ramInfo
+    val text = if (tier == WidgetSizeTier.DASHBOARD_4X4) ram.formatDetailed() else ram.formatMedium()
+    val combinedScale = (previewScale * config.textScale * config.ramScale).coerceIn(0.60f, 1.45f)
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size((14 * previewScale).dp)
+                .clip(RoundedCornerShape(3.dp))
+                .background(Color(0x2600E5FF))
+                .border(0.5.dp, Color(0x6600E5FF), RoundedCornerShape(3.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "R",
+                fontSize = (7.5f * previewScale).sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFFE0F2FE)
+            )
+        }
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = text,
+            style = buildGlassTextStyle(
+                config = config,
+                fontSize = (11f * combinedScale).sp,
+                color = secondaryColor,
+                shadowArgb = palette.shadowTextArgb,
+                isHeader = false
+            ),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }

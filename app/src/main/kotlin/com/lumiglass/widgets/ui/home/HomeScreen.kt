@@ -78,8 +78,8 @@ fun HomeScreen(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         // 1. Header: LumiGlass Title & Live Telemetry Pill
         Row(
@@ -166,13 +166,17 @@ fun HomeScreen(
             }
         }
 
-        // Quick Real-time Telemetry Strip (Lunar Date + Weather + Battery % & Battery Temp)
+        // Quick Real-time Telemetry Strip (RAM + Lunar Date + Weather + Battery % & Battery Temp)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            TelemetryBadge(
+                icon = Icons.Default.AutoAwesome,
+                text = "RAM ${snapshot.ramInfo.formatCompact()}"
+            )
             TelemetryBadge(
                 icon = Icons.Default.CalendarMonth,
                 text = snapshot.lunarDateInfo.formatDisplay(showCanChi = true, showHolidays = true)

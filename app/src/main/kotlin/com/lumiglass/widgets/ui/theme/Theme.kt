@@ -13,18 +13,22 @@ import androidx.compose.ui.platform.LocalContext
 import com.lumiglass.widgets.model.GlassThemeMode
 
 private val LumiDarkColorScheme = darkColorScheme(
-    primary = LumiSkyCyan,
+    primary = LumiElectricCyan,
     onPrimary = Color(0xFF001E2F),
-    primaryContainer = Color(0xFF0C4A6E),
+    primaryContainer = Color(0xFF0A2B47),
     onPrimaryContainer = Color(0xFFE0F2FE),
-    secondary = LumiEmeraldMint,
+    secondary = LumiPrismaticAzure,
+    onSecondary = Color(0xFF0A1E3C),
+    secondaryContainer = Color(0xFF132B4F),
+    onSecondaryContainer = Color(0xFFDCE8FD),
     tertiary = LumiAuroraViolet,
     background = DarkBackground,
     onBackground = Color(0xFFF1F5F9),
     surface = DarkSurface,
     onSurface = Color(0xFFF8FAFC),
     surfaceVariant = DarkSurfaceVariant,
-    onSurfaceVariant = Color(0xFFCBD5E1)
+    onSurfaceVariant = Color(0xFFCBD5E1),
+    outline = DarkGlassBorder
 )
 
 private val LumiLightColorScheme = lightColorScheme(
@@ -32,14 +36,18 @@ private val LumiLightColorScheme = lightColorScheme(
     onPrimary = Color.White,
     primaryContainer = Color(0xFFE0F2FE),
     onPrimaryContainer = Color(0xFF082F49),
-    secondary = Color(0xFF0D9488),
-    tertiary = Color(0xFF7E22CE),
+    secondary = LumiPrismaticAzure,
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFDBEAFE),
+    onSecondaryContainer = Color(0xFF1E3A8A),
+    tertiary = Color(0xFF7C3AED),
     background = LightBackground,
-    onBackground = Color(0xFF0F172A),
+    onBackground = Color(0xFF0A1424),
     surface = LightSurface,
-    onSurface = Color(0xFF0F172A),
+    onSurface = Color(0xFF0A1424),
     surfaceVariant = LightSurfaceVariant,
-    onSurfaceVariant = Color(0xFF334155)
+    onSurfaceVariant = Color(0xFF334155),
+    outline = LightGlassBorder
 )
 
 @Composable

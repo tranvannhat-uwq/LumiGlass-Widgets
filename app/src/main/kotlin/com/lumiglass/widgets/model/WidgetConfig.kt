@@ -33,7 +33,8 @@ enum class WidgetModuleType(val labelVi: String) {
     LUNAR_DATE("Âm lịch Việt Nam"),
     WEATHER("Thời tiết"),
     BATTERY_PERCENT("Phần trăm pin"),
-    BATTERY_TEMP("Nhiệt độ pin")
+    BATTERY_TEMP("Nhiệt độ pin"),
+    RAM_STATUS("Tình trạng RAM")
 }
 
 @Serializable
@@ -117,6 +118,27 @@ data class WidgetConfig(
     val showWeather: Boolean = true,
     val showBatteryPercent: Boolean = true,
     val showBatteryTemp: Boolean = false,
+    val showRamStatus: Boolean = true,
+
+    // 2b. Tùy chỉnh sâu từng thành phần riêng biệt (Kích thước & Vị trí riêng)
+    val clockScale: Float = 1.0f,
+    val dateScale: Float = 1.0f,
+    val weatherScale: Float = 1.0f,
+    val batteryScale: Float = 1.0f,
+    val ramScale: Float = 1.0f,
+    val calendarStripScale: Float = 1.0f,
+
+    val clockAlignment: ContentAlignmentOption = ContentAlignmentOption.START,
+    val dateAlignment: ContentAlignmentOption = ContentAlignmentOption.START,
+    val weatherAlignment: ContentAlignmentOption = ContentAlignmentOption.START,
+    val batteryAlignment: ContentAlignmentOption = ContentAlignmentOption.START,
+    val ramAlignment: ContentAlignmentOption = ContentAlignmentOption.START,
+
+    val clockOffsetY: Int = 0,
+    val dateOffsetY: Int = 0,
+    val weatherOffsetY: Int = 0,
+    val batteryOffsetY: Int = 0,
+    val ramOffsetY: Int = 0,
 
     val use24HourFormat: Boolean = true,
     val showSeconds: Boolean = false,
@@ -145,7 +167,8 @@ data class WidgetConfig(
         WidgetModuleType.LUNAR_DATE,
         WidgetModuleType.WEATHER,
         WidgetModuleType.BATTERY_PERCENT,
-        WidgetModuleType.BATTERY_TEMP
+        WidgetModuleType.BATTERY_TEMP,
+        WidgetModuleType.RAM_STATUS
     ),
     val layoutVariant: WidgetLayoutVariant = WidgetLayoutVariant.BALANCED_AUTO,
 

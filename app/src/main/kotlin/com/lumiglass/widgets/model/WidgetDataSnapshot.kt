@@ -142,5 +142,6 @@ data class WidgetDataSnapshot(
     val weatherInfo: WeatherInfo,
     val batteryInfo: BatteryInfo,
     val isSystemDarkTheme: Boolean,
-    val weekCalendarColumns: List<CalendarDayColumn> = emptyList()
+    val weekCalendarColumns: List<CalendarDayColumn> = emptyList(),
+    val ramInfo: com.lumiglass.widgets.data.ram.RamInfo = com.lumiglass.widgets.data.ram.RamInfo()
 )

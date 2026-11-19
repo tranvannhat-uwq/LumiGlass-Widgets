@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.RestartAlt
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -95,9 +96,10 @@ import com.lumiglass.widgets.ui.components.WallpaperStageWidgetPreview
 import kotlin.math.roundToInt
 
 private enum class StudioTab(val titleVi: String, val icon: ImageVector) {
-    APPEARANCE("Giao diện", Icons.Default.Palette),
-    CONTENT("Nội dung", Icons.Default.Layers),
-    TYPOGRAPHY("Chữ & Icon", Icons.Default.FormatSize),
+    APPEARANCE("Màu kính", Icons.Default.Palette),
+    CONTENT("Bật / Tắt", Icons.Default.Layers),
+    ELEMENTS("Từng phần", Icons.Default.Tune),
+    TYPOGRAPHY("Font & Chữ", Icons.Default.FormatSize),
     DATA("Dữ liệu", Icons.Default.CloudSync)
 }
 
@@ -158,6 +160,7 @@ fun WidgetStudioScreen(
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     var showSavePresetDialog by rememberSaveable { mutableStateOf(false) }
     var customPresetNameInput by rememberSaveable { mutableStateOf("") }
+    var isPreviewExpanded by rememberSaveable { mutableStateOf(false) }
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -241,10 +244,42 @@ fun WidgetStudioScreen(
                     )
                 }
 
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = if (isPreviewExpanded) MaterialTheme.colorScheme.primaryContainer
+                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .clickable { isPreviewExpanded = !isPreviewExpanded }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                modifier = Modifier.size(13.dp),
+                                tint = if (isPreviewExpanded) MaterialTheme.colorScheme.onPrimaryContainer
+                                else MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (isPreviewExpanded) "Thu nhỏ" else "Xem to",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isPreviewExpanded) MaterialTheme.colorScheme.onPrimaryContainer
+                                else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
                     IconButton(
                         onClick = { showSavePresetDialog = true },
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier.size(40.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.BookmarkAdd,
@@ -254,7 +289,7 @@ fun WidgetStudioScreen(
                     }
                     IconButton(
                         onClick = onResetDefault,
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier.size(40.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.RestartAlt,
@@ -273,7 +308,8 @@ fun WidgetStudioScreen(
                 onWallpaperChange = onWallpaperChange,
                 onSizeTierChange = { newTier ->
                     onUpdateConfig { it.copy(preferredSizeTier = newTier) }
-                }
+                },
+                isCompact = !isPreviewExpanded
             )
         }
 
@@ -327,6 +363,10 @@ fun WidgetStudioScreen(
                     config = config,
                     onUpdateConfig = onUpdateConfig,
                     onMoveModuleOrder = onMoveModuleOrder
+                )
+                StudioTab.ELEMENTS -> ElementsTabContent(
+                    config = config,
+                    onUpdateConfig = onUpdateConfig
                 )
                 StudioTab.TYPOGRAPHY -> TypographyTabContent(
                     config = config,
@@ -627,6 +667,7 @@ private fun ContentTabContent(
                 WidgetModuleType.WEATHER -> config.showWeather
                 WidgetModuleType.BATTERY_PERCENT -> config.showBatteryPercent
                 WidgetModuleType.BATTERY_TEMP -> config.showBatteryTemp
+                WidgetModuleType.RAM_STATUS -> config.showRamStatus
             }
 
             Surface(
@@ -673,6 +714,7 @@ private fun ContentTabContent(
                                         WidgetModuleType.WEATHER -> cfg.copy(showWeather = checked)
                                         WidgetModuleType.BATTERY_PERCENT -> cfg.copy(showBatteryPercent = checked)
                                         WidgetModuleType.BATTERY_TEMP -> cfg.copy(showBatteryTemp = checked)
+                                        WidgetModuleType.RAM_STATUS -> cfg.copy(showRamStatus = checked)
                                     }
                                 }
                             }
@@ -857,6 +899,16 @@ private fun ContentTabContent(
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
+        // RAM status
+        StudioSectionTitle("G. Trạng thái RAM thực tế")
+        StudioSwitchRow(
+            title = "Hiển thị thông tin RAM thực tế (Dung lượng & % đang dùng)",
+            checked = config.showRamStatus,
+            onCheckedChange = { v -> onUpdateConfig { it.copy(showRamStatus = v) } }
+        )
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
         // Layout Variants
         StudioSectionTitle("Phong cách bố cục (Layout Variant)")
         FlowRow(
@@ -870,6 +922,285 @@ private fun ContentTabContent(
                     label = { Text(variant.labelVi) },
                     modifier = Modifier.heightIn(min = 48.dp)
                 )
+            }
+        }
+    }
+}
+
+private enum class CustomElement(
+    val titleVi: String,
+    val icon: ImageVector,
+    val descriptionVi: String
+) {
+    CLOCK("Đồng hồ", Icons.Default.AutoAwesome, "Kích thước số giờ/phút, vị trí lên/xuống và căn lề"),
+    DATE("Ngày tháng", Icons.Default.FormatSize, "Kích thước ngày dương, âm lịch và căn lề"),
+    WEATHER("Thời tiết", Icons.Default.CloudSync, "Kích thước nhiệt độ, biểu tượng thời tiết"),
+    BATTERY("Pin thiết bị", Icons.Default.Layers, "Kích thước viên pin, % pin và nhiệt độ"),
+    RAM("Bộ nhớ RAM", Icons.Default.RestartAlt, "Kích thước thông tin RAM và mức tiêu thụ"),
+    CALENDAR_STRIP("Thanh lịch tuần", Icons.Default.Palette, "Kích thước cột ngày và âm lịch 5/7 ngày")
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ElementsTabContent(
+    config: WidgetConfig,
+    onUpdateConfig: ((WidgetConfig) -> WidgetConfig) -> Unit
+) {
+    var selectedElement by rememberSaveable { mutableStateOf(CustomElement.CLOCK) }
+
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        StudioSectionTitle("Tùy biến kích thước & vị trí từng thành phần riêng")
+        Text(
+            text = "Chọn từng thông tin bên dưới để điều chỉnh kích thước riêng, căn lề và dịch chuyển vị trí lên/xuống theo ý bạn mà không ảnh hưởng tới thành phần khác.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        // Element Selector Chips
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            CustomElement.entries.forEach { elem ->
+                val isSelected = selectedElement == elem
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(14.dp))
+                        .border(
+                            width = if (isSelected) 1.5.dp else 0.5.dp,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.outline.copy(alpha = 0.25f),
+                            shape = RoundedCornerShape(14.dp)
+                        )
+                        .clickable { selectedElement = elem }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = elem.icon,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = if (isSelected) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = elem.titleVi,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
+                            else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+        }
+
+        // Active Element Customizer Card
+        Surface(
+            shape = RoundedCornerShape(18.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.20f),
+                    shape = RoundedCornerShape(18.dp)
+                )
+        ) {
+            Column(
+                modifier = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Header of active element with on/off switch
+                val isElementVisible = when (selectedElement) {
+                    CustomElement.CLOCK -> config.showClock
+                    CustomElement.DATE -> config.showGregorianDate
+                    CustomElement.WEATHER -> config.showWeather
+                    CustomElement.BATTERY -> config.showBatteryPercent || config.showBatteryTemp
+                    CustomElement.RAM -> config.showRamStatus
+                    CustomElement.CALENDAR_STRIP -> config.showWeekCalendarStrip
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = selectedElement.titleVi,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = selectedElement.descriptionVi,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = isElementVisible,
+                        onCheckedChange = { checked ->
+                            onUpdateConfig { cfg ->
+                                when (selectedElement) {
+                                    CustomElement.CLOCK -> cfg.copy(showClock = checked)
+                                    CustomElement.DATE -> cfg.copy(showGregorianDate = checked)
+                                    CustomElement.WEATHER -> cfg.copy(showWeather = checked)
+                                    CustomElement.BATTERY -> cfg.copy(showBatteryPercent = checked)
+                                    CustomElement.RAM -> cfg.copy(showRamStatus = checked)
+                                    CustomElement.CALENDAR_STRIP -> cfg.copy(showWeekCalendarStrip = checked)
+                                }
+                            }
+                        }
+                    )
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+
+                // Scale Slider
+                val currentScale = when (selectedElement) {
+                    CustomElement.CLOCK -> config.clockScale
+                    CustomElement.DATE -> config.dateScale
+                    CustomElement.WEATHER -> config.weatherScale
+                    CustomElement.BATTERY -> config.batteryScale
+                    CustomElement.RAM -> config.ramScale
+                    CustomElement.CALENDAR_STRIP -> config.calendarStripScale
+                }
+
+                StudioSliderControl(
+                    title = "Kích thước riêng (Scale)",
+                    valueText = "${(currentScale * 100).roundToInt()}%" + when {
+                        currentScale > 1.05f -> " (Lớn hơn)"
+                        currentScale < 0.95f -> " (Thu nhỏ)"
+                        else -> " (Chuẩn)"
+                    },
+                    value = currentScale,
+                    valueRange = 0.60f..1.50f,
+                    onValueChange = { newScale ->
+                        onUpdateConfig { cfg ->
+                            when (selectedElement) {
+                                CustomElement.CLOCK -> cfg.copy(clockScale = newScale)
+                                CustomElement.DATE -> cfg.copy(dateScale = newScale)
+                                CustomElement.WEATHER -> cfg.copy(weatherScale = newScale)
+                                CustomElement.BATTERY -> cfg.copy(batteryScale = newScale)
+                                CustomElement.RAM -> cfg.copy(ramScale = newScale)
+                                CustomElement.CALENDAR_STRIP -> cfg.copy(calendarStripScale = newScale)
+                            }
+                        }
+                    }
+                )
+
+                // Vertical Offset Y Slider (for elements that can shift up/down)
+                if (selectedElement != CustomElement.CALENDAR_STRIP) {
+                    val currentOffset = when (selectedElement) {
+                        CustomElement.CLOCK -> config.clockOffsetY
+                        CustomElement.DATE -> config.dateOffsetY
+                        CustomElement.WEATHER -> config.weatherOffsetY
+                        CustomElement.BATTERY -> config.batteryOffsetY
+                        CustomElement.RAM -> config.ramOffsetY
+                        CustomElement.CALENDAR_STRIP -> 0
+                    }
+
+                    StudioSliderControl(
+                        title = "Vị trí dọc (Offset Y: Lên / Xuống)",
+                        valueText = when {
+                            currentOffset < 0 -> "${-currentOffset} dp (Dịch lên)"
+                            currentOffset > 0 -> "+$currentOffset dp (Dịch xuống)"
+                            else -> "0 dp (Chuẩn)"
+                        },
+                        value = currentOffset.toFloat(),
+                        valueRange = -20f..20f,
+                        onValueChange = { newOffset ->
+                            val offInt = newOffset.roundToInt()
+                            onUpdateConfig { cfg ->
+                                when (selectedElement) {
+                                    CustomElement.CLOCK -> cfg.copy(clockOffsetY = offInt)
+                                    CustomElement.DATE -> cfg.copy(dateOffsetY = offInt)
+                                    CustomElement.WEATHER -> cfg.copy(weatherOffsetY = offInt)
+                                    CustomElement.BATTERY -> cfg.copy(batteryOffsetY = offInt)
+                                    CustomElement.RAM -> cfg.copy(ramOffsetY = offInt)
+                                    CustomElement.CALENDAR_STRIP -> cfg
+                                }
+                            }
+                        }
+                    )
+
+                    // Alignment Selector
+                    val currentAlignment = when (selectedElement) {
+                        CustomElement.CLOCK -> config.clockAlignment
+                        CustomElement.DATE -> config.dateAlignment
+                        CustomElement.WEATHER -> config.weatherAlignment
+                        CustomElement.BATTERY -> config.batteryAlignment
+                        CustomElement.RAM -> config.ramAlignment
+                        CustomElement.CALENDAR_STRIP -> ContentAlignmentOption.START
+                    }
+
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            text = "Căn lề riêng (Alignment)",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            ContentAlignmentOption.entries.forEach { align ->
+                                val selected = currentAlignment == align
+                                FilterChip(
+                                    selected = selected,
+                                    onClick = {
+                                        onUpdateConfig { cfg ->
+                                            when (selectedElement) {
+                                                CustomElement.CLOCK -> cfg.copy(clockAlignment = align)
+                                                CustomElement.DATE -> cfg.copy(dateAlignment = align)
+                                                CustomElement.WEATHER -> cfg.copy(weatherAlignment = align)
+                                                CustomElement.BATTERY -> cfg.copy(batteryAlignment = align)
+                                                CustomElement.RAM -> cfg.copy(ramAlignment = align)
+                                                CustomElement.CALENDAR_STRIP -> cfg
+                                            }
+                                        }
+                                    },
+                                    label = { Text(align.labelVi) },
+                                    modifier = Modifier.heightIn(min = 40.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Reset this element button
+                OutlinedButton(
+                    onClick = {
+                        onUpdateConfig { cfg ->
+                            when (selectedElement) {
+                                CustomElement.CLOCK -> cfg.copy(clockScale = 1.0f, clockOffsetY = 0, clockAlignment = ContentAlignmentOption.START)
+                                CustomElement.DATE -> cfg.copy(dateScale = 1.0f, dateOffsetY = 0, dateAlignment = ContentAlignmentOption.START)
+                                CustomElement.WEATHER -> cfg.copy(weatherScale = 1.0f, weatherOffsetY = 0, weatherAlignment = ContentAlignmentOption.START)
+                                CustomElement.BATTERY -> cfg.copy(batteryScale = 1.0f, batteryOffsetY = 0, batteryAlignment = ContentAlignmentOption.START)
+                                CustomElement.RAM -> cfg.copy(ramScale = 1.0f, ramOffsetY = 0, ramAlignment = ContentAlignmentOption.START)
+                                CustomElement.CALENDAR_STRIP -> cfg.copy(calendarStripScale = 1.0f)
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.RestartAlt,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Đặt lại thành phần này về chuẩn", style = MaterialTheme.typography.labelMedium)
+                }
             }
         }
     }
