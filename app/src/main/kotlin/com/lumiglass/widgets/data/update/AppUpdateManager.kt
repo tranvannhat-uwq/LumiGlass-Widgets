@@ -187,16 +187,29 @@ class AppUpdateManager(
 
         val assets = obj["assets"]?.jsonArray
         if (assets != null) {
+            val apkCandidates = mutableListOf<Triple<String, String, Long>>()
             for (element in assets) {
                 val assetObj = element.jsonObject
                 val name = assetObj["name"]?.jsonPrimitive?.content.orEmpty()
                 val downloadUrl = assetObj["browser_download_url"]?.jsonPrimitive?.content
+                val size = assetObj["size"]?.jsonPrimitive?.longOrNull ?: 0L
                 if (name.endsWith(".apk", ignoreCase = true) && !downloadUrl.isNullOrBlank()) {
-                    apkUrl = downloadUrl
-                    apkName = name
-                    apkSize = assetObj["size"]?.jsonPrimitive?.longOrNull ?: 0L
-                    break
+                    apkCandidates.add(Triple(name, downloadUrl, size))
                 }
+            }
+            // Prioritize named releases (e.g. LumiGlass-Widgets-*.apk or *-release.apk) over generic debug
+            val bestCandidate = apkCandidates.firstOrNull { (name, _, _) ->
+                name.contains("LumiGlass", ignoreCase = true) && !name.contains("debug", ignoreCase = true)
+            } ?: apkCandidates.firstOrNull { (name, _, _) ->
+                name.contains("release", ignoreCase = true)
+            } ?: apkCandidates.firstOrNull { (name, _, _) ->
+                name.contains("LumiGlass", ignoreCase = true)
+            } ?: apkCandidates.firstOrNull()
+
+            if (bestCandidate != null) {
+                apkName = bestCandidate.first
+                apkUrl = bestCandidate.second
+                apkSize = bestCandidate.third
             }
         }
 

@@ -13,16 +13,41 @@ android {
     applicationId = "com.lumiglass.widgets"
     minSdk = 26
     targetSdk = 34
-    versionCode = 2
-    versionName = "1.1.0"
+    versionCode = 3
+    versionName = "1.1.1"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+  }
+
+  signingConfigs {
+    create("release") {
+      storeFile = rootProject.file("app/keystore/lumiglass.jks")
+      storePassword = "lumiglass123"
+      keyAlias = "lumiglass"
+      keyPassword = "lumiglass123"
+      enableV1Signing = true
+      enableV2Signing = true
+      enableV3Signing = true
+    }
+    getByName("debug") {
+      storeFile = rootProject.file("app/keystore/lumiglass.jks")
+      storePassword = "lumiglass123"
+      keyAlias = "lumiglass"
+      keyPassword = "lumiglass123"
+      enableV1Signing = true
+      enableV2Signing = true
+      enableV3Signing = true
+    }
   }
 
   buildTypes {
     release {
       isMinifyEnabled = false
+      signingConfig = signingConfigs.getByName("release")
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+    }
+    debug {
+      signingConfig = signingConfigs.getByName("debug")
     }
   }
 

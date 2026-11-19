@@ -30,6 +30,7 @@ captures/
 *.hprof
 *.keystore
 *.jks
+!app/keystore/lumiglass.jks
 
 # OS files
 .DS_Store

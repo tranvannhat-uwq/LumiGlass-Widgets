@@ -31,17 +31,26 @@ jobs:
           chmod +x gradlew
 
       - name: Run Unit Tests & Assemble APK
-        run: ./gradlew testDebugUnitTest assembleDebug --no-daemon
+        run: ./gradlew testDebugUnitTest assembleRelease assembleDebug --no-daemon
+
+      - name: Prepare Release APKs
+        run: |
+          mkdir -p dist
+          TAG_NAME="${{ github.ref_name }}"
+          if [ -z "$TAG_NAME" ]; then TAG_NAME="latest"; fi
+          cp app/build/outputs/apk/release/app-release.apk "dist/LumiGlass-Widgets-${TAG_NAME}.apk" 2>/dev/null || true
+          cp app/build/outputs/apk/release/app-release.apk "dist/LumiGlass-Widgets.apk" 2>/dev/null || true
+          cp app/build/outputs/apk/debug/app-debug.apk "dist/app-debug.apk" 2>/dev/null || true
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: LumiGlass-Widgets-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: dist/
 
       - name: Publish GitHub Release on Tag
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: app/build/outputs/apk/debug/app-debug.apk
+          files: dist/*
           generate_release_notes: true
