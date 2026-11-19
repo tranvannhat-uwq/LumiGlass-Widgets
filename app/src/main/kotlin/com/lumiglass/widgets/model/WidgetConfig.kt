@@ -127,6 +127,8 @@ data class WidgetConfig(
 
     val showCanChi: Boolean = true,
     val showLunarHolidays: Boolean = true,
+    val showWeekCalendarStrip: Boolean = true,
+    val weekCalendarDayCount: Int = 5, // 5 or 7 days centered on Today (before & after current date)
 
     val showHighLowTemp: Boolean = true,
     val showHumidity: Boolean = true,

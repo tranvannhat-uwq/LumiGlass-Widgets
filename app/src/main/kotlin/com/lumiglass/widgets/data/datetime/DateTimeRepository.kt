@@ -1,6 +1,7 @@
 package com.lumiglass.widgets.data.datetime
 
 import com.lumiglass.widgets.data.lunar.VietnameseLunarCalendar
+import com.lumiglass.widgets.model.CalendarDayColumn
 import com.lumiglass.widgets.model.DateFormatStyle
 import com.lumiglass.widgets.model.LunarDateInfo
 import com.lumiglass.widgets.model.TimezoneMode
@@ -119,6 +120,46 @@ object DateTimeRepository {
             yy = zdt.year,
             timeZone = VietnameseLunarCalendar.VIETNAM_TIMEZONE
         )
+    }
+
+    /**
+     * Generates 7 calendar columns [-3, -2, -1, 0 (Today), +1, +2, +3] around [zdt],
+     * including both Gregorian day and Vietnamese Lunar day/month.
+     * Index 3 is always Today (dayOffset == 0).
+     * For 5-day mode, callers use indices 1..5 (offsets -2..+2).
+     * For 7-day mode, callers use indices 0..6 (offsets -3..+3).
+     */
+    fun buildWeekCalendarColumns(zdt: ZonedDateTime): List<CalendarDayColumn> {
+        return (-3..3).map { offset ->
+            val target = zdt.plusDays(offset.toLong())
+            val lunar = VietnameseLunarCalendar.convertSolarToLunar(
+                dd = target.dayOfMonth,
+                mm = target.monthValue,
+                yy = target.year,
+                timeZone = VietnameseLunarCalendar.VIETNAM_TIMEZONE
+            )
+            val wdCode = when (target.dayOfWeek) {
+                DayOfWeek.MONDAY -> "T2"
+                DayOfWeek.TUESDAY -> "T3"
+                DayOfWeek.WEDNESDAY -> "T4"
+                DayOfWeek.THURSDAY -> "T5"
+                DayOfWeek.FRIDAY -> "T6"
+                DayOfWeek.SATURDAY -> "T7"
+                DayOfWeek.SUNDAY -> "CN"
+            }
+            val isWeekend = target.dayOfWeek == DayOfWeek.SATURDAY || target.dayOfWeek == DayOfWeek.SUNDAY
+            val solarStr = target.dayOfMonth.toString().padStart(2, '0')
+            val lunarStr = "${lunar.lunarDay.toString().padStart(2, '0')}/${lunar.lunarMonth.toString().padStart(2, '0')}"
+
+            CalendarDayColumn(
+                dayOffset = offset,
+                isToday = offset == 0,
+                isWeekend = isWeekend,
+                weekdayShortVi = if (offset == 0) "$wdCode•NAY" else wdCode,
+                solarDayString = solarStr,
+                lunarDayMonthString = lunarStr
+            )
+        }
     }
 
     /**

@@ -91,16 +91,22 @@ object WidgetRemoteViewsRenderer {
         )
         views.setImageViewBitmap(R.id.widget_glass_bg, glassBitmap)
 
-        // 2. Apply responsive padding and alignment
-        val padPx = (metrics.contentPaddingDp * density).toInt()
-        views.setViewPadding(R.id.widget_content_root, padPx, padPx, padPx, padPx)
+        // 2. Apply responsive padding and alignment (compact top/bottom padding for 4x2/4x3/4x4 so upper block sits higher)
+        val horizPadPx = (metrics.contentPaddingDp * density).toInt()
+        val vertPadPx = when (tier) {
+            WidgetSizeTier.ESSENTIAL_4X2 -> (8.5f * metrics.scaleFactor * density).toInt()
+            WidgetSizeTier.PREMIUM_4X3 -> (10f * metrics.scaleFactor * density).toInt()
+            WidgetSizeTier.DASHBOARD_4X4 -> (12f * metrics.scaleFactor * density).toInt()
+            else -> horizPadPx
+        }
+        views.setViewPadding(R.id.widget_content_root, horizPadPx, vertPadPx, horizPadPx, vertPadPx)
 
         val gravity = when (config.contentAlignment) {
             ContentAlignmentOption.START -> Gravity.START or Gravity.CENTER_VERTICAL
             ContentAlignmentOption.CENTER -> Gravity.CENTER
             ContentAlignmentOption.END -> Gravity.END or Gravity.CENTER_VERTICAL
         }
-        if (tier != WidgetSizeTier.ESSENTIAL_4X2) {
+        if (tier == WidgetSizeTier.MINI_2X1 || tier == WidgetSizeTier.COMPACT_2X2) {
             views.setInt(R.id.widget_content_root, "setGravity", gravity)
         }
 
@@ -150,6 +156,18 @@ object WidgetRemoteViewsRenderer {
             secondaryTextArgb = palette.secondaryTextArgb
         )
 
+        // 6b. Configure Bottom 5-Day / 7-Day Solar & Lunar Calendar Strip (for 4x2, 4x3, 4x4)
+        bindWeekCalendarStripViews(
+            views = views,
+            tier = tier,
+            scaleFactor = metrics.scaleFactor,
+            config = config,
+            snapshot = snapshot,
+            primaryTextArgb = palette.primaryTextArgb,
+            secondaryTextArgb = palette.secondaryTextArgb,
+            accentTextArgb = palette.accentTextArgb
+        )
+
         // 7. Attach Click PendingIntent to open Widget Studio for this specific appWidgetId
         val editIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -193,9 +211,9 @@ object WidgetRemoteViewsRenderer {
         val baseSingleSp = when (tier) {
             WidgetSizeTier.MINI_2X1 -> 25f
             WidgetSizeTier.COMPACT_2X2 -> 34f
-            WidgetSizeTier.ESSENTIAL_4X2 -> 40f
-            WidgetSizeTier.PREMIUM_4X3 -> 46f
-            WidgetSizeTier.DASHBOARD_4X4 -> 50f
+            WidgetSizeTier.ESSENTIAL_4X2 -> 35f
+            WidgetSizeTier.PREMIUM_4X3 -> 40f
+            WidgetSizeTier.DASHBOARD_4X4 -> 44f
         } * combinedScale * secondsFactor
 
         if (!config.splitClockTwoLines) {
@@ -490,9 +508,9 @@ object WidgetRemoteViewsRenderer {
             )
             val tempSp = when (tier) {
                 WidgetSizeTier.COMPACT_2X2 -> 10.5f
-                WidgetSizeTier.ESSENTIAL_4X2 -> 11f
+                WidgetSizeTier.ESSENTIAL_4X2 -> 10.5f
                 WidgetSizeTier.PREMIUM_4X3 -> 11.5f
-                WidgetSizeTier.DASHBOARD_4X4 -> 13f
+                WidgetSizeTier.DASHBOARD_4X4 -> 12.5f
                 else -> 11f
             } * combinedScale
 
@@ -501,6 +519,102 @@ object WidgetRemoteViewsRenderer {
             views.setTextColor(R.id.widget_battery_temp_text, tempColor)
         } else {
             views.setViewVisibility(R.id.widget_battery_temp_text, View.GONE)
+        }
+    }
+
+    private data class CalendarColViewIds(
+        val boxId: Int,
+        val weekdayId: Int,
+        val solarId: Int,
+        val lunarId: Int
+    )
+
+    private val CALENDAR_COLUMN_VIEW_IDS = listOf(
+        CalendarColViewIds(R.id.cal_col_0_box, R.id.cal_col_0_weekday, R.id.cal_col_0_solar, R.id.cal_col_0_lunar),
+        CalendarColViewIds(R.id.cal_col_1_box, R.id.cal_col_1_weekday, R.id.cal_col_1_solar, R.id.cal_col_1_lunar),
+        CalendarColViewIds(R.id.cal_col_2_box, R.id.cal_col_2_weekday, R.id.cal_col_2_solar, R.id.cal_col_2_lunar),
+        CalendarColViewIds(R.id.cal_col_3_box, R.id.cal_col_3_weekday, R.id.cal_col_3_solar, R.id.cal_col_3_lunar),
+        CalendarColViewIds(R.id.cal_col_4_box, R.id.cal_col_4_weekday, R.id.cal_col_4_solar, R.id.cal_col_4_lunar),
+        CalendarColViewIds(R.id.cal_col_5_box, R.id.cal_col_5_weekday, R.id.cal_col_5_solar, R.id.cal_col_5_lunar),
+        CalendarColViewIds(R.id.cal_col_6_box, R.id.cal_col_6_weekday, R.id.cal_col_6_solar, R.id.cal_col_6_lunar)
+    )
+
+    private fun bindWeekCalendarStripViews(
+        views: RemoteViews,
+        tier: WidgetSizeTier,
+        scaleFactor: Float,
+        config: WidgetConfig,
+        snapshot: WidgetDataSnapshot,
+        primaryTextArgb: Int,
+        secondaryTextArgb: Int,
+        accentTextArgb: Int
+    ) {
+        if (tier == WidgetSizeTier.MINI_2X1 || tier == WidgetSizeTier.COMPACT_2X2) return
+
+        val columns = snapshot.weekCalendarColumns
+        if (!config.showWeekCalendarStrip || columns.size < 7) {
+            views.setViewVisibility(R.id.widget_week_strip_container, View.GONE)
+            return
+        }
+
+        views.setViewVisibility(R.id.widget_week_strip_container, View.VISIBLE)
+        val useSevenDays = config.weekCalendarDayCount >= 7
+        val combinedScale = (scaleFactor * config.textScale).coerceIn(0.76f, 1.24f)
+
+        val baseWeekdaySp = when (tier) {
+            WidgetSizeTier.ESSENTIAL_4X2 -> 9.2f
+            WidgetSizeTier.PREMIUM_4X3 -> 10.0f
+            WidgetSizeTier.DASHBOARD_4X4 -> 10.5f
+            else -> 9.2f
+        } * combinedScale
+
+        val baseSolarSp = when (tier) {
+            WidgetSizeTier.ESSENTIAL_4X2 -> 12.8f
+            WidgetSizeTier.PREMIUM_4X3 -> 14.0f
+            WidgetSizeTier.DASHBOARD_4X4 -> 15.0f
+            else -> 12.8f
+        } * combinedScale
+
+        val baseLunarSp = when (tier) {
+            WidgetSizeTier.ESSENTIAL_4X2 -> 8.8f
+            WidgetSizeTier.PREMIUM_4X3 -> 9.5f
+            WidgetSizeTier.DASHBOARD_4X4 -> 10.0f
+            else -> 8.8f
+        } * combinedScale
+
+        for (i in 0 until 7) {
+            val ids = CALENDAR_COLUMN_VIEW_IDS[i]
+            val isEdgeCol = (i == 0 || i == 6)
+            if (isEdgeCol && !useSevenDays) {
+                views.setViewVisibility(ids.boxId, View.GONE)
+                continue
+            }
+
+            views.setViewVisibility(ids.boxId, View.VISIBLE)
+            val col = columns[i]
+
+            val wdColor = if (col.isToday) primaryTextArgb else secondaryTextArgb
+            val solarColor = primaryTextArgb
+            val lunarColor = if (col.isToday) accentTextArgb else secondaryTextArgb
+
+            views.setTextViewText(ids.weekdayId, applyTypographySpans(col.weekdayShortVi, config, isHeader = col.isToday))
+            views.setTextViewTextSize(ids.weekdayId, TypedValue.COMPLEX_UNIT_SP, baseWeekdaySp)
+            views.setTextColor(ids.weekdayId, wdColor)
+
+            val solarSp = if (col.isToday) baseSolarSp * 1.08f else baseSolarSp
+            views.setTextViewText(ids.solarId, applyTypographySpans(col.solarDayString, config, isHeader = true))
+            views.setTextViewTextSize(ids.solarId, TypedValue.COMPLEX_UNIT_SP, solarSp)
+            views.setTextColor(ids.solarId, solarColor)
+
+            val lunarText = if (config.showLunarDate) col.lunarDayMonthString else ""
+            if (lunarText.isNotEmpty()) {
+                views.setViewVisibility(ids.lunarId, View.VISIBLE)
+                views.setTextViewText(ids.lunarId, applyTypographySpans(lunarText, config, isHeader = col.isToday))
+                views.setTextViewTextSize(ids.lunarId, TypedValue.COMPLEX_UNIT_SP, baseLunarSp)
+                views.setTextColor(ids.lunarId, lunarColor)
+            } else {
+                views.setViewVisibility(ids.lunarId, View.GONE)
+            }
         }
     }
 

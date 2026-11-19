@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_week_strip_container"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:baselineAligned="false"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingTop="4dp">
+
+    <!-- Column 0: Today - 3 (Visible in 7-day mode, GONE in 5-day mode) -->
+    <LinearLayout
+        android:id="@+id/cal_col_0_box"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingVertical="2dp">
+        <TextView
+            android:id="@+id/cal_col_0_weekday"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:shadowColor="#70000000"
+            android:shadowDy="1"
+            android:shadowRadius="2"
+            android:textColor="#CBD5E1"
+            android:textSize="9.5sp" />
+        <TextView
+            android:id="@+id/cal_col_0_solar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:shadowColor="#80000000"
+            android:shadowDy="1"
+            android:shadowRadius="3"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+        <TextView
+            android:id="@+id/cal_col_0_lunar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:shadowColor="#70000000"
+            android:shadowDy="1"
+            android:shadowRadius="2"
+            android:textColor="#BAE6FD"
+            android:textSize="9sp" />
+    </LinearLayout>
+
+    <!-- Column 1: Today - 2 -->
+    <LinearLayout
+        android:id="@+id/cal_col_1_box"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingVertical="2dp">
+        <TextView
+            android:id="@+id/cal_col_1_weekday"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:shadowColor="#70000000"
+            android:shadowDy="1"
+            android:shadowRadius="2"
+            android:textColor="#CBD5E1"
+            android:textSize="9.5sp" />
+        <TextView
+            android:id="@+id/cal_col_1_solar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:shadowColor="#80000000"
+            android:shadowDy="1"
+            android:shadowRadius="3"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+        <TextView
+            android:id="@+id/cal_col_1_lunar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:shadowColor="#70000000"
+            android:shadowDy="1"
+            android:shadowRadius="2"
+            android:textColor="#BAE6FD"
+            android:textSize="9sp" />
+    </LinearLayout>
+
+    <!-- Column 2: Today - 1 -->
+    <LinearLayout
+        android:id="@+id/cal_col_2_box"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingVertical="2dp">
+        <TextView
+            android:id="@+id/cal_col_2_weekday"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:shadowColor="#70000000"
+            android:shadowDy="1"
+            android:shadowRadius="2"
+            android:textColor="#CBD5E1"
+            android:textSize="9.5sp" />
+        <TextView
+            android:id="@+id/cal_col_2_solar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:shadowColor="#80000000"
+            android:shadowDy="1"
+            android:shadowRadius="3"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+        <TextView
+            android:id="@+id/cal_col_2_lunar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:shadowColor="#70000000"
+            android:shadowDy="1"
+            android:shadowRadius="2"
+            android:textColor="#BAE6FD"
+            android:textSize="9sp" />
+    </LinearLayout>
+
+    <!-- Column 3: TODAY (0) - Center Highlighted Liquid Glass Pill -->
+    <LinearLayout
+        android:id="@+id/cal_col_3_box"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="2dp"
+        android:layout_weight="1.15"
+        android:background="@drawable/bg_glass_today_pill"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingVertical="3dp">
+        <TextView
+            android:id="@+id/cal_col_3_weekday"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:shadowColor="#80000000"
+            android:shadowDy="1"
+            android:shadowRadius="2"
+            android:textColor="#FFFFFF"
+            android:textSize="9.5sp"
+            android:textStyle="bold" />
+        <TextView
+            android:id="@+id/cal_col_3_solar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:shadowColor="#80000000"
+            android:shadowDy="1"
+            android:shadowRadius="3"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+        <TextView
+            android:id="@+id/cal_col_3_lunar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:shadowColor="#80000000"
+            android:shadowDy="1"
+            android:shadowRadius="2"
+            android:textColor="#7DD3FC"
+            android:textSize="9.5sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Column 4: Today + 1 -->
+    <LinearLayout
+        android:id="@+id/cal_col_4_box"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingVertical="2dp">
+        <TextView
+            android:id="@+id/cal_col_4_weekday"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:shadowColor="#70000000"
+            android:shadowDy="1"
+            android:shadowRadius="2"
+            android:textColor="#CBD5E1"
+            android:textSize="9.5sp" />
+        <TextView
+            android:id="@+id/cal_col_4_solar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:shadowColor="#80000000"
+            android:shadowDy="1"
+            android:shadowRadius="3"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+        <TextView
+            android:id="@+id/cal_col_4_lunar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:shadowColor="#70000000"
+            android:shadowDy="1"
+            android:shadowRadius="2"
+            android:textColor="#BAE6FD"
+            android:textSize="9sp" />
+    </LinearLayout>
+
+    <!-- Column 5: Today + 2 -->
+    <LinearLayout
+        android:id="@+id/cal_col_5_box"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingVertical="2dp">
+        <TextView
+            android:id="@+id/cal_col_5_weekday"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:shadowColor="#70000000"
+            android:shadowDy="1"
+            android:shadowRadius="2"
+            android:textColor="#CBD5E1"
+            android:textSize="9.5sp" />
+        <TextView
+            android:id="@+id/cal_col_5_solar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:shadowColor="#80000000"
+            android:shadowDy="1"
+            android:shadowRadius="3"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+        <TextView
+            android:id="@+id/cal_col_5_lunar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:shadowColor="#70000000"
+            android:shadowDy="1"
+            android:shadowRadius="2"
+            android:textColor="#BAE6FD"
+            android:textSize="9sp" />
+    </LinearLayout>
+
+    <!-- Column 6: Today + 3 (Visible in 7-day mode, GONE in 5-day mode) -->
+    <LinearLayout
+        android:id="@+id/cal_col_6_box"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingVertical="2dp">
+        <TextView
+            android:id="@+id/cal_col_6_weekday"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:shadowColor="#70000000"
+            android:shadowDy="1"
+            android:shadowRadius="2"
+            android:textColor="#CBD5E1"
+            android:textSize="9.5sp" />
+        <TextView
+            android:id="@+id/cal_col_6_solar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:shadowColor="#80000000"
+            android:shadowDy="1"
+            android:shadowRadius="3"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+        <TextView
+            android:id="@+id/cal_col_6_lunar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:shadowColor="#70000000"
+            android:shadowDy="1"
+            android:shadowRadius="2"
+            android:textColor="#BAE6FD"
+            android:textSize="9sp" />
+    </LinearLayout>
+
+</LinearLayout>

@@ -115,7 +115,8 @@ class WidgetStudioViewModel(application: Application) : AndroidViewModel(applica
             lunarDateInfo = lunarInfo,
             weatherInfo = weather,
             batteryInfo = if (cfg.batteryMonitoringEnabled) battery else BatteryInfo(),
-            isSystemDarkTheme = isDark
+            isSystemDarkTheme = isDark,
+            weekCalendarColumns = DateTimeRepository.buildWeekCalendarColumns(zdt)
         )
     }.stateIn(
         viewModelScope,
@@ -167,7 +168,8 @@ class WidgetStudioViewModel(application: Application) : AndroidViewModel(applica
             lunarDateInfo = DateTimeRepository.getCurrentLunarDate(zdt),
             weatherInfo = _currentWeather.value,
             batteryInfo = BatteryRepository.readCurrentBattery(appContext, true),
-            isSystemDarkTheme = true
+            isSystemDarkTheme = true,
+            weekCalendarColumns = DateTimeRepository.buildWeekCalendarColumns(zdt)
         )
     }
 

@@ -757,7 +757,31 @@ private fun ContentTabContent(
         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
         // Vietnamese Lunar Calendar Options
-        StudioSectionTitle("C. Tùy chọn Âm lịch Việt Nam (UTC+7)")
+        StudioSectionTitle("C. Tùy chọn Âm lịch Việt Nam & Thanh lịch 5/7 ngày")
+        StudioSwitchRow(
+            title = "Hiển thị thanh lịch cột (Trước & Sau ngày hiện tại kèm Âm lịch)",
+            checked = config.showWeekCalendarStrip,
+            onCheckedChange = { v -> onUpdateConfig { it.copy(showWeekCalendarStrip = v) } }
+        )
+        if (config.showWeekCalendarStrip) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = config.weekCalendarDayCount == 5,
+                    onClick = { onUpdateConfig { it.copy(weekCalendarDayCount = 5) } },
+                    label = { Text("5 cột ngày (-2 .. Hôm nay .. +2)") },
+                    modifier = Modifier.heightIn(min = 48.dp)
+                )
+                FilterChip(
+                    selected = config.weekCalendarDayCount == 7,
+                    onClick = { onUpdateConfig { it.copy(weekCalendarDayCount = 7) } },
+                    label = { Text("7 cột ngày (-3 .. Hôm nay .. +3)") },
+                    modifier = Modifier.heightIn(min = 48.dp)
+                )
+            }
+        }
         StudioSwitchRow(
             title = "Hiển thị Can Chi năm âm lịch (VD: Bính Ngọ)",
             checked = config.showCanChi,

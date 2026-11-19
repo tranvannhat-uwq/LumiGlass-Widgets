@@ -84,6 +84,28 @@ class LumiGlassCoreEngineTest {
             useMonthInWords = true
         )
         assertEquals("Th 5, 19 Thg 11", shortStyle)
+
+        // Verify 5/7-day Calendar Strip around 19/11/2026 (11/10 Lunar)
+        val weekCols = DateTimeRepository.buildWeekCalendarColumns(zdt)
+        assertEquals(7, weekCols.size)
+
+        // Index 1 (-2 days): Tuesday 17/11 -> 09/10 Lunar
+        assertEquals(-2, weekCols[1].dayOffset)
+        assertEquals("T3", weekCols[1].weekdayShortVi)
+        assertEquals("17", weekCols[1].solarDayString)
+        assertEquals("09/10", weekCols[1].lunarDayMonthString)
+
+        // Index 3 (0 = Today): Thursday 19/11 -> 11/10 Lunar
+        assertTrue(weekCols[3].isToday)
+        assertEquals("T5•NAY", weekCols[3].weekdayShortVi)
+        assertEquals("19", weekCols[3].solarDayString)
+        assertEquals("11/10", weekCols[3].lunarDayMonthString)
+
+        // Index 5 (+2 days): Saturday 21/11 -> 13/10 Lunar
+        assertEquals(2, weekCols[5].dayOffset)
+        assertEquals("T7", weekCols[5].weekdayShortVi)
+        assertEquals("21", weekCols[5].solarDayString)
+        assertEquals("13/10", weekCols[5].lunarDayMonthString)
     }
 
     @Test

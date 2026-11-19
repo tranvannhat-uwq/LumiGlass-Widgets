@@ -434,9 +434,10 @@ object GlassSurfaceRenderer {
 
         when (dividerLayout) {
             DividerZoneLayout.VERTICAL_SPLIT_4X2 -> {
-                val x = glassRect.left + glassRect.width() * 0.50f
-                val topY = glassRect.top + glassRect.height() * 0.18f
-                val botY = glassRect.bottom - glassRect.height() * 0.18f
+                // Upper vertical split at 45% width
+                val x = glassRect.left + glassRect.width() * 0.45f
+                val topY = glassRect.top + glassRect.height() * 0.09f
+                val botY = glassRect.top + glassRect.height() * 0.58f
                 linePaint.shader = LinearGradient(
                     x, topY, x, botY,
                     intArrayOf(
@@ -448,11 +449,42 @@ object GlassSurfaceRenderer {
                     Shader.TileMode.CLAMP
                 )
                 canvas.drawLine(x, topY, x, botY, linePaint)
+
+                // Horizontal hairline divider above the 5/7-day Calendar Strip
+                val y = glassRect.top + glassRect.height() * 0.62f
+                val leftX = glassRect.left + glassRect.width() * 0.06f
+                val rightX = glassRect.right - glassRect.width() * 0.06f
+                linePaint.shader = LinearGradient(
+                    leftX, y, rightX, y,
+                    intArrayOf(
+                        ColorUtils.setAlphaComponent(borderArgb, alphaEdge),
+                        ColorUtils.setAlphaComponent(borderArgb, alphaCenter),
+                        ColorUtils.setAlphaComponent(borderArgb, alphaEdge)
+                    ),
+                    floatArrayOf(0f, 0.5f, 1f),
+                    Shader.TileMode.CLAMP
+                )
+                canvas.drawLine(leftX, y, rightX, y, linePaint)
             }
             DividerZoneLayout.PREMIUM_4X3 -> {
-                val y = glassRect.top + glassRect.height() * 0.58f
-                val leftX = glassRect.left + glassRect.width() * 0.08f
-                val rightX = glassRect.right - glassRect.width() * 0.08f
+                val x = glassRect.left + glassRect.width() * 0.46f
+                val topY = glassRect.top + glassRect.height() * 0.10f
+                val botY = glassRect.top + glassRect.height() * 0.61f
+                linePaint.shader = LinearGradient(
+                    x, topY, x, botY,
+                    intArrayOf(
+                        ColorUtils.setAlphaComponent(borderArgb, alphaEdge),
+                        ColorUtils.setAlphaComponent(borderArgb, alphaCenter),
+                        ColorUtils.setAlphaComponent(borderArgb, alphaEdge)
+                    ),
+                    floatArrayOf(0f, 0.5f, 1f),
+                    Shader.TileMode.CLAMP
+                )
+                canvas.drawLine(x, topY, x, botY, linePaint)
+
+                val y = glassRect.top + glassRect.height() * 0.65f
+                val leftX = glassRect.left + glassRect.width() * 0.06f
+                val rightX = glassRect.right - glassRect.width() * 0.06f
                 linePaint.shader = LinearGradient(
                     leftX, y, rightX, y,
                     intArrayOf(
@@ -466,10 +498,10 @@ object GlassSurfaceRenderer {
                 canvas.drawLine(leftX, y, rightX, y, linePaint)
             }
             DividerZoneLayout.DASHBOARD_4X4 -> {
-                val y1 = glassRect.top + glassRect.height() * 0.44f
-                val y2 = glassRect.top + glassRect.height() * 0.74f
-                val leftX = glassRect.left + glassRect.width() * 0.07f
-                val rightX = glassRect.right - glassRect.width() * 0.07f
+                val y1 = glassRect.top + glassRect.height() * 0.37f
+                val y2 = glassRect.top + glassRect.height() * 0.70f
+                val leftX = glassRect.left + glassRect.width() * 0.06f
+                val rightX = glassRect.right - glassRect.width() * 0.06f
                 val hShader = LinearGradient(
                     leftX, y1, rightX, y1,
                     intArrayOf(

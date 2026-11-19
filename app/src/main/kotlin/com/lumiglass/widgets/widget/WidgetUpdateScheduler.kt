@@ -141,7 +141,8 @@ object WidgetUpdateScheduler {
             lunarDateInfo = lunarDate,
             weatherInfo = weatherInfo,
             batteryInfo = batteryInfo,
-            isSystemDarkTheme = isSystemDark
+            isSystemDarkTheme = isSystemDark,
+            weekCalendarColumns = DateTimeRepository.buildWeekCalendarColumns(zdt)
         )
     }
 

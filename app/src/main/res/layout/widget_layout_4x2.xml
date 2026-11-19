@@ -16,222 +16,246 @@
         android:id="@+id/widget_content_root"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:baselineAligned="false"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:padding="16dp"
+        android:orientation="vertical"
+        android:paddingStart="14dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="8dp"
         android:weightSum="100">
 
-        <!-- Left Zone: Large Clock + Gregorian Date -->
+        <!-- Upper Section (Moved UP): Left Clock+Date | Right Weather+Lunar+Battery -->
         <LinearLayout
-            android:id="@+id/widget_left_pane"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="50"
-            android:gravity="center_vertical"
-            android:orientation="vertical"
-            android:paddingEnd="8dp">
+            android:id="@+id/widget_upper_main_row"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="62"
+            android:baselineAligned="false"
+            android:gravity="top"
+            android:orientation="horizontal"
+            android:weightSum="100">
 
-            <TextClock
-                android:id="@+id/widget_clock_single"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:format12Hour="hh:mm"
-                android:format24Hour="HH:mm"
-                android:includeFontPadding="false"
-                android:maxLines="1"
-                android:shadowColor="#80000000"
-                android:shadowDy="2"
-                android:shadowRadius="6"
-                android:textColor="#FFFFFF"
-                android:textSize="42sp"
-                android:textStyle="bold" />
-
+            <!-- Left Zone (45%): Large Clock + Gregorian Date -->
             <LinearLayout
-                android:id="@+id/widget_clock_split_container"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:id="@+id/widget_left_pane"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="45"
+                android:gravity="top"
                 android:orientation="vertical"
-                android:visibility="gone">
+                android:paddingEnd="6dp">
 
                 <TextClock
-                    android:id="@+id/widget_clock_split_hour"
+                    android:id="@+id/widget_clock_single"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:format12Hour="hh"
-                    android:format24Hour="HH"
+                    android:ellipsize="end"
+                    android:format12Hour="hh:mm"
+                    android:format24Hour="HH:mm"
                     android:includeFontPadding="false"
+                    android:maxLines="1"
                     android:shadowColor="#80000000"
                     android:shadowDy="2"
                     android:shadowRadius="6"
                     android:textColor="#FFFFFF"
-                    android:textSize="34sp"
+                    android:textSize="36sp"
                     android:textStyle="bold" />
 
-                <TextClock
-                    android:id="@+id/widget_clock_split_minute"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="-4dp"
-                    android:format12Hour="mm"
-                    android:format24Hour="mm"
-                    android:includeFontPadding="false"
-                    android:shadowColor="#80000000"
-                    android:shadowDy="2"
-                    android:shadowRadius="6"
-                    android:textColor="#E0F2FE"
-                    android:textSize="34sp" />
-            </LinearLayout>
-
-            <TextView
-                android:id="@+id/widget_date_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:ellipsize="end"
-                android:includeFontPadding="false"
-                android:maxLines="2"
-                android:shadowColor="#70000000"
-                android:shadowDy="1"
-                android:shadowRadius="4"
-                android:textColor="#F1F5F9"
-                android:textSize="12sp" />
-        </LinearLayout>
-
-        <!-- Right Zone: Weather + Vietnamese Lunar Date + Battery % & Battery Temp -->
-        <LinearLayout
-            android:id="@+id/widget_right_pane"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="50"
-            android:gravity="center_vertical"
-            android:orientation="vertical"
-            android:paddingStart="10dp">
-
-            <!-- Weather Module -->
-            <LinearLayout
-                android:id="@+id/widget_weather_container"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <ImageView
-                    android:id="@+id/widget_weather_icon"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:layout_marginEnd="7dp"
-                    android:contentDescription="@null" />
-
                 <LinearLayout
+                    android:id="@+id/widget_clock_split_container"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical">
+                    android:orientation="horizontal"
+                    android:visibility="gone">
 
-                    <LinearLayout
+                    <TextClock
+                        android:id="@+id/widget_clock_split_hour"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:format12Hour="hh"
+                        android:format24Hour="HH"
+                        android:includeFontPadding="false"
+                        android:shadowColor="#80000000"
+                        android:shadowDy="2"
+                        android:shadowRadius="6"
+                        android:textColor="#FFFFFF"
+                        android:textSize="34sp"
+                        android:textStyle="bold" />
+
+                    <TextClock
+                        android:id="@+id/widget_clock_split_minute"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:format12Hour="mm"
+                        android:format24Hour="mm"
+                        android:includeFontPadding="false"
+                        android:shadowColor="#80000000"
+                        android:shadowDy="2"
+                        android:shadowRadius="6"
+                        android:textColor="#E0F2FE"
+                        android:textSize="34sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/widget_date_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="2"
+                    android:shadowColor="#70000000"
+                    android:shadowDy="1"
+                    android:shadowRadius="4"
+                    android:textColor="#F1F5F9"
+                    android:textSize="11.5sp" />
+            </LinearLayout>
+
+            <!-- Right Zone (55%): Weather + Vietnamese Lunar Date + Battery % & Battery Temp -->
+            <LinearLayout
+                android:id="@+id/widget_right_pane"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="55"
+                android:gravity="top"
+                android:orientation="vertical"
+                android:paddingStart="8dp">
+
+                <!-- Weather Module -->
+                <LinearLayout
+                    android:id="@+id/widget_weather_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/widget_weather_icon"
+                        android:layout_width="25dp"
+                        android:layout_height="25dp"
+                        android:layout_marginEnd="6dp"
+                        android:contentDescription="@null" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/widget_weather_temp"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:includeFontPadding="false"
+                                android:shadowColor="#80000000"
+                                android:shadowDy="1"
+                                android:shadowRadius="4"
+                                android:textColor="#FFFFFF"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/widget_weather_condition"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="5dp"
+                                android:ellipsize="end"
+                                android:includeFontPadding="false"
+                                android:maxLines="1"
+                                android:shadowColor="#70000000"
+                                android:shadowDy="1"
+                                android:shadowRadius="3"
+                                android:textColor="#E2E8F0"
+                                android:textSize="10.5sp" />
+                        </LinearLayout>
 
                         <TextView
-                            android:id="@+id/widget_weather_temp"
+                            android:id="@+id/widget_weather_details"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:includeFontPadding="false"
-                            android:shadowColor="#80000000"
-                            android:shadowDy="1"
-                            android:shadowRadius="4"
-                            android:textColor="#FFFFFF"
-                            android:textSize="16sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/widget_weather_condition"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="5dp"
                             android:ellipsize="end"
                             android:includeFontPadding="false"
                             android:maxLines="1"
                             android:shadowColor="#70000000"
                             android:shadowDy="1"
                             android:shadowRadius="3"
-                            android:textColor="#E2E8F0"
-                            android:textSize="11sp" />
+                            android:textColor="#CBD5E1"
+                            android:textSize="9.8sp" />
                     </LinearLayout>
+                </LinearLayout>
+
+                <!-- Vietnamese Lunar Date Module -->
+                <TextView
+                    android:id="@+id/widget_lunar_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:shadowColor="#70000000"
+                    android:shadowDy="1"
+                    android:shadowRadius="3"
+                    android:textColor="#BAE6FD"
+                    android:textSize="10.8sp" />
+
+                <!-- Battery % + Battery Temperature Module -->
+                <LinearLayout
+                    android:id="@+id/widget_battery_container"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/widget_battery_gauge"
+                        android:layout_width="28dp"
+                        android:layout_height="13dp"
+                        android:layout_marginEnd="5dp"
+                        android:contentDescription="@null" />
 
                     <TextView
-                        android:id="@+id/widget_weather_details"
+                        android:id="@+id/widget_battery_percent_text"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:ellipsize="end"
                         android:includeFontPadding="false"
-                        android:maxLines="1"
                         android:shadowColor="#70000000"
                         android:shadowDy="1"
                         android:shadowRadius="3"
-                        android:textColor="#CBD5E1"
-                        android:textSize="10sp" />
+                        android:textColor="#FFFFFF"
+                        android:textSize="10.8sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/widget_battery_temp_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="5dp"
+                        android:includeFontPadding="false"
+                        android:shadowColor="#70000000"
+                        android:shadowDy="1"
+                        android:shadowRadius="3"
+                        android:textColor="#E2E8F0"
+                        android:textSize="10.5sp" />
                 </LinearLayout>
             </LinearLayout>
+        </LinearLayout>
 
-            <!-- Vietnamese Lunar Date Module -->
-            <TextView
-                android:id="@+id/widget_lunar_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
-                android:ellipsize="end"
-                android:includeFontPadding="false"
-                android:maxLines="1"
-                android:shadowColor="#70000000"
-                android:shadowDy="1"
-                android:shadowRadius="3"
-                android:textColor="#BAE6FD"
-                android:textSize="11sp" />
+        <!-- Bottom Section (38%): 5-Day or 7-Day Solar & Lunar Calendar Strip -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="38"
+            android:gravity="center_vertical"
+            android:orientation="vertical">
 
-            <!-- Battery % + Battery Temperature Module -->
-            <LinearLayout
-                android:id="@+id/widget_battery_container"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <ImageView
-                    android:id="@+id/widget_battery_gauge"
-                    android:layout_width="32dp"
-                    android:layout_height="15dp"
-                    android:layout_marginEnd="6dp"
-                    android:contentDescription="@null" />
-
-                <TextView
-                    android:id="@+id/widget_battery_percent_text"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:includeFontPadding="false"
-                    android:shadowColor="#70000000"
-                    android:shadowDy="1"
-                    android:shadowRadius="3"
-                    android:textColor="#FFFFFF"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/widget_battery_temp_text"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:includeFontPadding="false"
-                    android:shadowColor="#70000000"
-                    android:shadowDy="1"
-                    android:shadowRadius="3"
-                    android:textColor="#E2E8F0"
-                    android:textSize="11sp" />
-            </LinearLayout>
+            <include layout="@layout/include_week_calendar_strip" />
         </LinearLayout>
     </LinearLayout>
 </FrameLayout>

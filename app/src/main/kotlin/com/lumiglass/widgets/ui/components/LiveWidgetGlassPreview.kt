@@ -277,9 +277,9 @@ fun LiveWidgetGlassCard(
     val (cardWidthDp, cardHeightDp) = when (tier) {
         WidgetSizeTier.MINI_2X1 -> (176 * previewScale).dp to (84 * previewScale).dp
         WidgetSizeTier.COMPACT_2X2 -> (184 * previewScale).dp to (184 * previewScale).dp
-        WidgetSizeTier.ESSENTIAL_4X2 -> (326 * previewScale).dp to (156 * previewScale).dp
-        WidgetSizeTier.PREMIUM_4X3 -> (326 * previewScale).dp to (228 * previewScale).dp
-        WidgetSizeTier.DASHBOARD_4X4 -> (326 * previewScale).dp to (296 * previewScale).dp
+        WidgetSizeTier.ESSENTIAL_4X2 -> (328 * previewScale).dp to (178 * previewScale).dp
+        WidgetSizeTier.PREMIUM_4X3 -> (328 * previewScale).dp to (236 * previewScale).dp
+        WidgetSizeTier.DASHBOARD_4X4 -> (328 * previewScale).dp to (302 * previewScale).dp
     }
 
     val hasRightContent = config.showWeather || config.showLunarDate ||
@@ -436,98 +436,128 @@ fun LiveWidgetGlassCard(
             }
 
             WidgetSizeTier.ESSENTIAL_4X2 -> {
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(pad),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(
+                            horizontal = (14 * previewScale).dp,
+                            vertical = (9 * previewScale).dp
+                        )
                 ) {
-                    // Left 50%: Clock + Gregorian Date
-                    Column(
+                    // Upper 62%: Left Clock+Date | Right Weather+Lunar+Battery (Moved UP)
+                    Row(
                         modifier = Modifier
-                            .weight(0.50f)
-                            .padding(end = 8.dp),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.Start
+                            .weight(0.62f)
+                            .fillMaxWidth(),
+                        verticalAlignment = Alignment.Top
                     ) {
-                        if (config.showClock) {
-                            PreviewClockText(
-                                config = config,
-                                snapshot = snapshot,
-                                baseSp = 38f * previewScale,
-                                primaryColor = primaryColor,
-                                accentColor = accentColor,
-                                paletteShadowArgb = palette.shadowTextArgb,
-                                horizontalSplit = false
-                            )
-                        }
-                        if (config.showGregorianDate) {
-                            Spacer(modifier = Modifier.height(3.dp))
-                            Text(
-                                text = snapshot.gregorianDateText,
-                                style = buildGlassTextStyle(
+                        // Left 45%: Clock + Gregorian Date
+                        Column(
+                            modifier = Modifier
+                                .weight(0.45f)
+                                .padding(end = 6.dp),
+                            verticalArrangement = Arrangement.Top,
+                            horizontalAlignment = Alignment.Start
+                        ) {
+                            if (config.showClock) {
+                                PreviewClockText(
                                     config = config,
-                                    fontSize = (11.5f * previewScale * config.textScale).sp,
-                                    color = secondaryColor,
-                                    shadowArgb = palette.shadowTextArgb,
-                                    isHeader = false
-                                ),
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                                    snapshot = snapshot,
+                                    baseSp = 34f * previewScale,
+                                    primaryColor = primaryColor,
+                                    accentColor = accentColor,
+                                    paletteShadowArgb = palette.shadowTextArgb,
+                                    horizontalSplit = true
+                                )
+                            }
+                            if (config.showGregorianDate) {
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = snapshot.gregorianDateText,
+                                    style = buildGlassTextStyle(
+                                        config = config,
+                                        fontSize = (11f * previewScale * config.textScale).sp,
+                                        color = secondaryColor,
+                                        shadowArgb = palette.shadowTextArgb,
+                                        isHeader = false
+                                    ),
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+
+                        // Right 55%: Weather + Lunar + Battery
+                        Column(
+                            modifier = Modifier
+                                .weight(0.55f)
+                                .padding(start = 8.dp),
+                            verticalArrangement = Arrangement.Top,
+                            horizontalAlignment = Alignment.Start
+                        ) {
+                            if (config.showWeather) {
+                                PreviewWeatherCluster(
+                                    config = config,
+                                    snapshot = snapshot,
+                                    iconSizeDp = (24 * previewScale).dp,
+                                    tempSp = 14.5f * previewScale,
+                                    condSp = 10f * previewScale,
+                                    showDetails = true,
+                                    primaryColor = primaryColor,
+                                    secondaryColor = secondaryColor,
+                                    palettePrimaryArgb = palette.primaryTextArgb,
+                                    paletteShadowArgb = palette.shadowTextArgb
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                            }
+                            if (config.showLunarDate) {
+                                Text(
+                                    text = snapshot.lunarDateInfo.formatDisplay(
+                                        showCanChi = config.showCanChi,
+                                        showHolidays = config.showLunarHolidays
+                                    ),
+                                    style = buildGlassTextStyle(
+                                        config = config,
+                                        fontSize = (10.2f * previewScale * config.textScale).sp,
+                                        color = accentColor,
+                                        shadowArgb = palette.shadowTextArgb,
+                                        isHeader = false
+                                    ),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                            }
+                            if (config.batteryMonitoringEnabled && (config.showBatteryPercent || config.showBatteryTemp)) {
+                                PreviewBatteryCluster(
+                                    config = config,
+                                    snapshot = snapshot,
+                                    tier = tier,
+                                    textSp = 10.5f * previewScale,
+                                    primaryColor = primaryColor,
+                                    secondaryColor = secondaryColor,
+                                    palettePrimaryArgb = palette.primaryTextArgb,
+                                    paletteShadowArgb = palette.shadowTextArgb
+                                )
+                            }
                         }
                     }
 
-                    // Right 50%: Weather + Lunar + Battery
-                    Column(
-                        modifier = Modifier
-                            .weight(0.50f)
-                            .padding(start = 10.dp),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.Start
-                    ) {
-                        if (config.showWeather) {
-                            PreviewWeatherCluster(
+                    // Bottom 38%: 5-Day or 7-Day Solar & Lunar Calendar Strip
+                    if (config.showWeekCalendarStrip) {
+                        Box(
+                            modifier = Modifier
+                                .weight(0.38f)
+                                .fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            PreviewWeekCalendarStrip(
                                 config = config,
                                 snapshot = snapshot,
-                                iconSizeDp = (26 * previewScale).dp,
-                                tempSp = 15f * previewScale,
-                                condSp = 10.5f * previewScale,
-                                showDetails = true,
+                                previewScale = previewScale,
                                 primaryColor = primaryColor,
                                 secondaryColor = secondaryColor,
-                                palettePrimaryArgb = palette.primaryTextArgb,
-                                paletteShadowArgb = palette.shadowTextArgb
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                        }
-                        if (config.showLunarDate) {
-                            Text(
-                                text = snapshot.lunarDateInfo.formatDisplay(
-                                    showCanChi = config.showCanChi,
-                                    showHolidays = config.showLunarHolidays
-                                ),
-                                style = buildGlassTextStyle(
-                                    config = config,
-                                    fontSize = (10.8f * previewScale * config.textScale).sp,
-                                    color = accentColor,
-                                    shadowArgb = palette.shadowTextArgb,
-                                    isHeader = false
-                                ),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                        }
-                        if (config.batteryMonitoringEnabled && (config.showBatteryPercent || config.showBatteryTemp)) {
-                            PreviewBatteryCluster(
-                                config = config,
-                                snapshot = snapshot,
-                                tier = tier,
-                                textSp = 11f * previewScale,
-                                primaryColor = primaryColor,
-                                secondaryColor = secondaryColor,
-                                palettePrimaryArgb = palette.primaryTextArgb,
+                                accentColor = accentColor,
                                 paletteShadowArgb = palette.shadowTextArgb
                             )
                         }
@@ -539,12 +569,141 @@ fun LiveWidgetGlassCard(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(pad)
+                        .padding(
+                            horizontal = (16 * previewScale).dp,
+                            vertical = (10 * previewScale).dp
+                        )
                 ) {
-                    // Upper 58%: Clock + Date + Lunar
+                    // Upper 64%: Left Clock+Date | Right Weather+Lunar+Battery
+                    Row(
+                        modifier = Modifier
+                            .weight(0.64f)
+                            .fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .weight(0.46f)
+                                .padding(end = 8.dp),
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            if (config.showClock) {
+                                PreviewClockText(
+                                    config = config,
+                                    snapshot = snapshot,
+                                    baseSp = 40f * previewScale,
+                                    primaryColor = primaryColor,
+                                    accentColor = accentColor,
+                                    paletteShadowArgb = palette.shadowTextArgb,
+                                    horizontalSplit = true
+                                )
+                            }
+                            if (config.showGregorianDate) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = snapshot.gregorianDateText,
+                                    style = buildGlassTextStyle(
+                                        config = config,
+                                        fontSize = (12.5f * previewScale * config.textScale).sp,
+                                        color = secondaryColor,
+                                        shadowArgb = palette.shadowTextArgb,
+                                        isHeader = false
+                                    ),
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+
+                        Column(
+                            modifier = Modifier
+                                .weight(0.54f)
+                                .padding(start = 10.dp),
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            if (config.showWeather) {
+                                PreviewWeatherCluster(
+                                    config = config,
+                                    snapshot = snapshot,
+                                    iconSizeDp = (30 * previewScale).dp,
+                                    tempSp = 16.5f * previewScale,
+                                    condSp = 11f * previewScale,
+                                    showDetails = true,
+                                    primaryColor = primaryColor,
+                                    secondaryColor = secondaryColor,
+                                    palettePrimaryArgb = palette.primaryTextArgb,
+                                    paletteShadowArgb = palette.shadowTextArgb
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                            }
+                            if (config.showLunarDate) {
+                                Text(
+                                    text = snapshot.lunarDateInfo.formatDisplay(
+                                        showCanChi = config.showCanChi,
+                                        showHolidays = config.showLunarHolidays
+                                    ),
+                                    style = buildGlassTextStyle(
+                                        config = config,
+                                        fontSize = (11.2f * previewScale * config.textScale).sp,
+                                        color = accentColor,
+                                        shadowArgb = palette.shadowTextArgb,
+                                        isHeader = false
+                                    ),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                            }
+                            if (config.batteryMonitoringEnabled && (config.showBatteryPercent || config.showBatteryTemp)) {
+                                PreviewBatteryCluster(
+                                    config = config,
+                                    snapshot = snapshot,
+                                    tier = tier,
+                                    textSp = 11.5f * previewScale,
+                                    primaryColor = primaryColor,
+                                    secondaryColor = secondaryColor,
+                                    palettePrimaryArgb = palette.primaryTextArgb,
+                                    paletteShadowArgb = palette.shadowTextArgb
+                                )
+                            }
+                        }
+                    }
+
+                    // Lower 36%: 5-Day or 7-Day Solar & Lunar Calendar Strip
+                    if (config.showWeekCalendarStrip) {
+                        Box(
+                            modifier = Modifier
+                                .weight(0.36f)
+                                .fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            PreviewWeekCalendarStrip(
+                                config = config,
+                                snapshot = snapshot,
+                                previewScale = previewScale * 1.05f,
+                                primaryColor = primaryColor,
+                                secondaryColor = secondaryColor,
+                                accentColor = accentColor,
+                                paletteShadowArgb = palette.shadowTextArgb
+                            )
+                        }
+                    }
+                }
+            }
+
+            WidgetSizeTier.DASHBOARD_4X4 -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(
+                            horizontal = (18 * previewScale).dp,
+                            vertical = (12 * previewScale).dp
+                        )
+                ) {
+                    // Zone 1 (36%): Clock + Date + Lunar
                     Column(
                         modifier = Modifier
-                            .weight(0.58f)
+                            .weight(0.36f)
                             .fillMaxWidth(),
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = horizontalAlign
@@ -560,7 +719,7 @@ fun LiveWidgetGlassCard(
                                 horizontalSplit = true
                             )
                         }
-                        Spacer(modifier = Modifier.height(3.dp))
+                        Spacer(modifier = Modifier.height(2.dp))
                         PreviewDateAndLunarLines(
                             config = config,
                             snapshot = snapshot,
@@ -574,106 +733,20 @@ fun LiveWidgetGlassCard(
                         )
                     }
 
-                    // Lower 42%: Weather Left + Battery Right
-                    Row(
-                        modifier = Modifier
-                            .weight(0.42f)
-                            .fillMaxWidth()
-                            .padding(top = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        if (config.showWeather) {
-                            Box(modifier = Modifier.weight(0.58f)) {
-                                PreviewWeatherCluster(
-                                    config = config,
-                                    snapshot = snapshot,
-                                    iconSizeDp = (32 * previewScale).dp,
-                                    tempSp = 17f * previewScale,
-                                    condSp = 11.5f * previewScale,
-                                    showDetails = true,
-                                    primaryColor = primaryColor,
-                                    secondaryColor = secondaryColor,
-                                    palettePrimaryArgb = palette.primaryTextArgb,
-                                    paletteShadowArgb = palette.shadowTextArgb
-                                )
-                            }
-                        }
-                        if (config.batteryMonitoringEnabled && (config.showBatteryPercent || config.showBatteryTemp)) {
-                            Box(
-                                modifier = Modifier.weight(0.42f),
-                                contentAlignment = Alignment.CenterEnd
-                            ) {
-                                PreviewBatteryCluster(
-                                    config = config,
-                                    snapshot = snapshot,
-                                    tier = tier,
-                                    textSp = 12f * previewScale,
-                                    primaryColor = primaryColor,
-                                    secondaryColor = secondaryColor,
-                                    palettePrimaryArgb = palette.primaryTextArgb,
-                                    paletteShadowArgb = palette.shadowTextArgb,
-                                    stackVertically = true
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            WidgetSizeTier.DASHBOARD_4X4 -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(pad)
-                ) {
-                    // Zone 1 (44%): Clock + Date + Lunar
+                    // Zone 2 (34%): Weather Station + Battery Telemetry
                     Column(
                         modifier = Modifier
-                            .weight(0.44f)
+                            .weight(0.34f)
                             .fillMaxWidth(),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = horizontalAlign
-                    ) {
-                        if (config.showClock) {
-                            PreviewClockText(
-                                config = config,
-                                snapshot = snapshot,
-                                baseSp = 48f * previewScale,
-                                primaryColor = primaryColor,
-                                accentColor = accentColor,
-                                paletteShadowArgb = palette.shadowTextArgb,
-                                horizontalSplit = true
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(3.dp))
-                        PreviewDateAndLunarLines(
-                            config = config,
-                            snapshot = snapshot,
-                            tier = tier,
-                            dateSp = 14f * previewScale,
-                            lunarSp = 12.2f * previewScale,
-                            secondaryColor = secondaryColor,
-                            accentColor = accentColor,
-                            paletteShadowArgb = palette.shadowTextArgb,
-                            textAlign = textAlign
-                        )
-                    }
-
-                    // Zone 2 (30%): Weather Station
-                    Box(
-                        modifier = Modifier
-                            .weight(0.30f)
-                            .fillMaxWidth(),
-                        contentAlignment = Alignment.CenterStart
+                        verticalArrangement = Arrangement.Center
                     ) {
                         if (config.showWeather) {
                             PreviewWeatherCluster(
                                 config = config,
                                 snapshot = snapshot,
-                                iconSizeDp = (38 * previewScale).dp,
-                                tempSp = 20f * previewScale,
-                                condSp = 12.5f * previewScale,
+                                iconSizeDp = (32 * previewScale).dp,
+                                tempSp = 18f * previewScale,
+                                condSp = 11.8f * previewScale,
                                 showDetails = true,
                                 primaryColor = primaryColor,
                                 secondaryColor = secondaryColor,
@@ -681,26 +754,38 @@ fun LiveWidgetGlassCard(
                                 paletteShadowArgb = palette.shadowTextArgb
                             )
                         }
-                    }
-
-                    // Zone 3 (26%): Battery % & Real Battery Temperature Telemetry
-                    Box(
-                        modifier = Modifier
-                            .weight(0.26f)
-                            .fillMaxWidth(),
-                        contentAlignment = Alignment.CenterStart
-                    ) {
                         if (config.batteryMonitoringEnabled && (config.showBatteryPercent || config.showBatteryTemp)) {
+                            Spacer(modifier = Modifier.height(5.dp))
                             PreviewBatteryCluster(
                                 config = config,
                                 snapshot = snapshot,
                                 tier = tier,
-                                textSp = 13.5f * previewScale,
+                                textSp = 12.5f * previewScale,
                                 primaryColor = primaryColor,
                                 secondaryColor = secondaryColor,
                                 palettePrimaryArgb = palette.primaryTextArgb,
                                 paletteShadowArgb = palette.shadowTextArgb,
                                 expandFullRow = true
+                            )
+                        }
+                    }
+
+                    // Zone 3 (30%): 5-Day or 7-Day Solar & Lunar Calendar Strip
+                    if (config.showWeekCalendarStrip) {
+                        Box(
+                            modifier = Modifier
+                                .weight(0.30f)
+                                .fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            PreviewWeekCalendarStrip(
+                                config = config,
+                                snapshot = snapshot,
+                                previewScale = previewScale * 1.08f,
+                                primaryColor = primaryColor,
+                                secondaryColor = secondaryColor,
+                                accentColor = accentColor,
+                                paletteShadowArgb = palette.shadowTextArgb
                             )
                         }
                     }
@@ -1159,4 +1244,99 @@ private fun buildGlassTextStyle(
         letterSpacing = config.letterSpacingEm.toDouble().em,
         shadow = shadow
     )
+}
+
+@Composable
+private fun PreviewWeekCalendarStrip(
+    config: WidgetConfig,
+    snapshot: WidgetDataSnapshot,
+    previewScale: Float,
+    primaryColor: Color,
+    secondaryColor: Color,
+    accentColor: Color,
+    paletteShadowArgb: Int
+) {
+    val allCols = snapshot.weekCalendarColumns
+    if (allCols.size < 7) return
+    val visibleCols = if (config.weekCalendarDayCount >= 7) {
+        allCols
+    } else {
+        allCols.subList(1, 6)
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 3.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        visibleCols.forEach { col ->
+            val boxModifier = if (col.isToday) {
+                Modifier
+                    .weight(1.15f)
+                    .padding(horizontal = 2.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                Color.White.copy(alpha = 0.22f),
+                                accentColor.copy(alpha = 0.14f)
+                            )
+                        )
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = Color.White.copy(alpha = 0.55f),
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                    .padding(vertical = 3.dp)
+            } else {
+                Modifier
+                    .weight(1f)
+                    .padding(vertical = 2.dp)
+            }
+
+            Column(
+                modifier = boxModifier,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = col.weekdayShortVi,
+                    style = buildGlassTextStyle(
+                        config = config,
+                        fontSize = (9.2f * previewScale * config.textScale).sp,
+                        color = if (col.isToday) primaryColor else secondaryColor,
+                        shadowArgb = paletteShadowArgb,
+                        isHeader = col.isToday
+                    ),
+                    maxLines = 1
+                )
+                Text(
+                    text = col.solarDayString,
+                    style = buildGlassTextStyle(
+                        config = config,
+                        fontSize = ((if (col.isToday) 13.8f else 12.6f) * previewScale * config.textScale).sp,
+                        color = primaryColor,
+                        shadowArgb = paletteShadowArgb,
+                        isHeader = true
+                    ),
+                    maxLines = 1
+                )
+                if (config.showLunarDate) {
+                    Text(
+                        text = col.lunarDayMonthString,
+                        style = buildGlassTextStyle(
+                            config = config,
+                            fontSize = (8.8f * previewScale * config.textScale).sp,
+                            color = if (col.isToday) accentColor else secondaryColor,
+                            shadowArgb = paletteShadowArgb,
+                            isHeader = col.isToday
+                        ),
+                        maxLines = 1
+                    )
+                }
+            }
+        }
+    }
 }

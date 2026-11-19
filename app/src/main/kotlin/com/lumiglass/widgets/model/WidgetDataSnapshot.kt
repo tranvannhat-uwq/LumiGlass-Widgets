@@ -121,6 +121,16 @@ data class BatteryInfo(
     }
 }
 
+@Serializable
+data class CalendarDayColumn(
+    val dayOffset: Int,
+    val isToday: Boolean,
+    val isWeekend: Boolean,
+    val weekdayShortVi: String,
+    val solarDayString: String,
+    val lunarDayMonthString: String
+)
+
 data class WidgetDataSnapshot(
     val previewTimePrimary: String,
     val previewTimeHour: String,
@@ -131,5 +141,6 @@ data class WidgetDataSnapshot(
     val lunarDateInfo: LunarDateInfo,
     val weatherInfo: WeatherInfo,
     val batteryInfo: BatteryInfo,
-    val isSystemDarkTheme: Boolean
+    val isSystemDarkTheme: Boolean,
+    val weekCalendarColumns: List<CalendarDayColumn> = emptyList()
 )
