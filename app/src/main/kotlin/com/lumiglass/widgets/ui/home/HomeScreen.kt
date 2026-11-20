@@ -53,6 +53,8 @@ import com.lumiglass.widgets.model.WidgetDataSnapshot
 import com.lumiglass.widgets.model.WidgetSizeTier
 import com.lumiglass.widgets.ui.components.SimulatedWallpaper
 import com.lumiglass.widgets.ui.components.WallpaperStageWidgetPreview
+import com.lumiglass.widgets.ui.glass.LiquidGlassButton
+import com.lumiglass.widgets.ui.glass.LiquidMaterialChip
 import com.lumiglass.widgets.widget.ActiveWidgetSummary
 import kotlin.math.roundToInt
 
@@ -95,18 +97,12 @@ fun HomeScreen(
                         fontWeight = FontWeight.ExtraBold
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Surface(
-                        shape = RoundedCornerShape(50),
-                        color = MaterialTheme.colorScheme.primaryContainer
-                    ) {
-                        Text(
-                            text = "LIQUID GLASS",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                        )
-                    }
+                    LiquidMaterialChip(
+                        text = "LIQUID GLASS",
+                        isSelected = true,
+                        horizontalPadding = 10.dp,
+                        verticalPadding = 3.dp
+                    )
                 }
                 Text(
                     text = "Thiết kế & Tùy biến Widget Kính Lỏng Cao Cấp",
@@ -232,12 +228,10 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Button(
+                LiquidGlassButton(
                     onClick = onOpenStudioForDraft,
-                    modifier = Modifier
-                        .weight(1f)
-                        .heightIn(min = 48.dp),
-                    shape = RoundedCornerShape(14.dp)
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(16.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Edit,
@@ -248,10 +242,9 @@ fun HomeScreen(
                     Text("Tùy biến trong Studio", fontWeight = FontWeight.Bold)
                 }
 
-                FilledTonalButton(
+                LiquidGlassButton(
                     onClick = { onPinWidgetTier(currentConfig.preferredSizeTier) },
-                    modifier = Modifier.heightIn(min = 48.dp),
-                    shape = RoundedCornerShape(14.dp)
+                    shape = RoundedCornerShape(16.dp)
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.AddToHomeScreen,
@@ -470,7 +463,7 @@ fun HomeScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(100.dp))
     }
 }
 
@@ -479,28 +472,10 @@ private fun TelemetryBadge(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     text: String
 ) {
-    Surface(
-        shape = RoundedCornerShape(50),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(15.dp)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = text,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Medium
-            )
-        }
-    }
+    LiquidMaterialChip(
+        text = text,
+        icon = icon
+    )
 }
 
 @Composable
@@ -511,17 +486,38 @@ private fun PresetQuickCard(
     val c1 = Color(preset.defaultConfig.glassTintColorHex.toInt())
     val c2 = Color(preset.defaultConfig.glassSecondaryTintHex.toInt())
 
-    Surface(
-        shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+    val cardShape = RoundedCornerShape(20.dp)
+    val dark = androidx.compose.foundation.isSystemInDarkTheme()
+
+    val cardBrush = if (dark) {
+        Brush.verticalGradient(
+            listOf(
+                Color.White.copy(alpha = 0.14f),
+                Color.White.copy(alpha = 0.04f)
+            )
+        )
+    } else {
+        Brush.verticalGradient(
+            listOf(
+                Color.White.copy(alpha = 0.90f),
+                Color(0xFFF1F5F9).copy(alpha = 0.70f)
+            )
+        )
+    }
+
+    val rimBrush = Brush.verticalGradient(
+        listOf(
+            Color.White.copy(alpha = if (dark) 0.55f else 0.85f),
+            Color.White.copy(alpha = 0.08f)
+        )
+    )
+
+    Box(
         modifier = Modifier
             .width(190.dp)
-            .clip(RoundedCornerShape(18.dp))
-            .border(
-                1.dp,
-                MaterialTheme.colorScheme.outline.copy(alpha = 0.22f),
-                RoundedCornerShape(18.dp)
-            )
+            .clip(cardShape)
+            .background(cardBrush, cardShape)
+            .border(width = 0.9.dp, brush = rimBrush, shape = cardShape)
             .clickable(onClick = onClick)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {

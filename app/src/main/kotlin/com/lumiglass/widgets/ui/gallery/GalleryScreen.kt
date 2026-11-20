@@ -48,6 +48,8 @@ import com.lumiglass.widgets.model.WidgetDataSnapshot
 import com.lumiglass.widgets.model.WidgetSizeTier
 import com.lumiglass.widgets.ui.components.LiveWidgetGlassCard
 import com.lumiglass.widgets.ui.components.SimulatedWallpaper
+import com.lumiglass.widgets.ui.glass.LiquidGlassButton
+import com.lumiglass.widgets.ui.glass.LiquidMaterialChip
 
 @Composable
 fun GalleryScreen(
@@ -102,11 +104,10 @@ fun GalleryScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 WidgetSizeTier.entries.forEach { tier ->
-                    FilterChip(
-                        selected = selectedSizeTier == tier,
-                        onClick = { selectedSizeTier = tier },
-                        label = { Text("${tier.gridLabel} • ${tier.titleVi}") },
-                        modifier = Modifier.heightIn(min = 48.dp)
+                    LiquidMaterialChip(
+                        text = "${tier.gridLabel} • ${tier.titleVi}",
+                        isSelected = selectedSizeTier == tier,
+                        onClick = { selectedSizeTier = tier }
                     )
                 }
             }
@@ -126,11 +127,10 @@ fun GalleryScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 categories.forEach { category ->
-                    FilterChip(
-                        selected = selectedCategory == category,
-                        onClick = { selectedCategory = category },
-                        label = { Text(category) },
-                        modifier = Modifier.heightIn(min = 48.dp)
+                    LiquidMaterialChip(
+                        text = category,
+                        isSelected = selectedCategory == category,
+                        onClick = { selectedCategory = category }
                     )
                 }
             }
@@ -226,12 +226,10 @@ fun GalleryScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Button(
+                        LiquidGlassButton(
                             onClick = { onSelectPresetForStudio(preset, selectedSizeTier) },
-                            modifier = Modifier
-                                .weight(1f)
-                                .heightIn(min = 48.dp),
-                            shape = RoundedCornerShape(14.dp)
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(16.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Edit,
@@ -239,13 +237,12 @@ fun GalleryScreen(
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Mở trong Widget Studio", fontWeight = FontWeight.Bold)
+                            Text("Mở trong Studio", fontWeight = FontWeight.Bold)
                         }
 
-                        OutlinedButton(
+                        LiquidGlassButton(
                             onClick = { onPinPresetDirectly(preset, selectedSizeTier) },
-                            modifier = Modifier.heightIn(min = 48.dp),
-                            shape = RoundedCornerShape(14.dp)
+                            shape = RoundedCornerShape(16.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.AddToHomeScreen,
@@ -253,13 +250,13 @@ fun GalleryScreen(
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Ghim ${selectedSizeTier.gridLabel}")
+                            Text("Ghim ${selectedSizeTier.gridLabel}", fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(100.dp))
     }
 }

@@ -93,6 +93,10 @@ import com.lumiglass.widgets.model.WidgetLayoutVariant
 import com.lumiglass.widgets.model.WidgetModuleType
 import com.lumiglass.widgets.ui.components.SimulatedWallpaper
 import com.lumiglass.widgets.ui.components.WallpaperStageWidgetPreview
+import com.lumiglass.widgets.ui.glass.LiquidGlassButton
+import com.lumiglass.widgets.ui.glass.LiquidGlassSlider
+import com.lumiglass.widgets.ui.glass.LiquidGlassToggle
+import com.lumiglass.widgets.ui.glass.LiquidMaterialChip
 import kotlin.math.roundToInt
 
 private enum class StudioTab(val titleVi: String, val icon: ImageVector) {
@@ -307,33 +311,20 @@ fun WidgetStudioScreen(
             )
         }
 
-        // 2. Editor Tabs
-        ScrollableTabRow(
-            selectedTabIndex = selectedTabIndex,
-            edgePadding = 16.dp,
-            containerColor = MaterialTheme.colorScheme.surface
+        // 2. Editor Tabs styled as Liquid Glass Material Chips
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             StudioTab.entries.forEachIndexed { index, tab ->
-                Tab(
-                    selected = selectedTabIndex == index,
-                    onClick = { selectedTabIndex = index },
-                    modifier = Modifier.heightIn(min = 48.dp),
-                    text = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(
-                                imageVector = tab.icon,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Text(
-                                text = tab.titleVi,
-                                fontWeight = if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Medium
-                            )
-                        }
-                    }
+                LiquidMaterialChip(
+                    text = tab.titleVi,
+                    icon = tab.icon,
+                    isSelected = selectedTabIndex == index,
+                    onClick = { selectedTabIndex = index }
                 )
             }
         }
@@ -379,10 +370,10 @@ fun WidgetStudioScreen(
             }
         }
 
-        // 4. Persistent Bottom Action Bar (Minimum 48dp touch height)
+        // 4. Persistent Bottom Action Bar with Liquid Glass Buttons
         Surface(
-            tonalElevation = 4.dp,
-            shadowElevation = 8.dp,
+            tonalElevation = 6.dp,
+            shadowElevation = 10.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(
@@ -392,12 +383,10 @@ fun WidgetStudioScreen(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Button(
+                LiquidGlassButton(
                     onClick = onSaveAndApply,
-                    modifier = Modifier
-                        .weight(1f)
-                        .heightIn(min = 48.dp),
-                    shape = RoundedCornerShape(14.dp)
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(16.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Check,
@@ -418,11 +407,9 @@ fun WidgetStudioScreen(
                 }
 
                 if (!isLauncherConfigureMode) {
-                    OutlinedButton(
+                    LiquidGlassButton(
                         onClick = onPinToHomeScreen,
-                        modifier = Modifier.heightIn(min = 48.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
+                        shape = RoundedCornerShape(16.dp)
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.AddToHomeScreen,
@@ -697,7 +684,7 @@ private fun ContentTabContent(
                         ) {
                             Icon(Icons.Default.ArrowDownward, contentDescription = "Đưa xuống")
                         }
-                        Switch(
+                        LiquidGlassToggle(
                             checked = isEnabled,
                             onCheckedChange = { checked ->
                                 onUpdateConfig { cfg ->
@@ -1041,7 +1028,7 @@ private fun ElementsTabContent(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    Switch(
+                    LiquidGlassToggle(
                         checked = isElementVisible,
                         onCheckedChange = { checked ->
                             onUpdateConfig { cfg ->
@@ -1582,7 +1569,8 @@ private fun StudioSliderControl(
                 fontWeight = FontWeight.Bold
             )
         }
-        Slider(
+        Spacer(modifier = Modifier.height(6.dp))
+        LiquidGlassSlider(
             value = value,
             onValueChange = onValueChange,
             valueRange = valueRange,
@@ -1601,9 +1589,9 @@ private fun StudioSwitchRow(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(14.dp))
             .clickable { onCheckedChange(!checked) }
-            .padding(horizontal = 4.dp),
+            .padding(horizontal = 4.dp, vertical = 2.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -1614,7 +1602,7 @@ private fun StudioSwitchRow(
                 .weight(1f)
                 .padding(end = 12.dp)
         )
-        Switch(
+        LiquidGlassToggle(
             checked = checked,
             onCheckedChange = onCheckedChange
         )

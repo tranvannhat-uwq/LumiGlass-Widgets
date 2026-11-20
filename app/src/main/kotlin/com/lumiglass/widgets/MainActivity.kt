@@ -8,8 +8,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Collections
@@ -17,6 +19,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -31,11 +34,17 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.lumiglass.widgets.model.WidgetSizeTier
 import com.lumiglass.widgets.ui.gallery.GalleryScreen
+import com.lumiglass.widgets.ui.glass.LiquidGlassBottomBar
+import com.lumiglass.widgets.ui.glass.LiquidNavDestinationItem
 import com.lumiglass.widgets.ui.home.HomeScreen
 import com.lumiglass.widgets.ui.settings.SettingsScreen
 import com.lumiglass.widgets.ui.studio.WidgetStudioScreen
@@ -155,6 +164,7 @@ private fun LumiGlassMainApp(
     val statusMessage by viewModel.statusMessage.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
+    val backdrop = com.kyant.backdrop.backdrops.rememberLayerBackdrop()
 
     LaunchedEffect(initialOpenStudio, editingWidgetId) {
         if (initialOpenStudio || editingWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
@@ -170,36 +180,16 @@ private fun LumiGlassMainApp(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        bottomBar = {
-            NavigationBar {
-                MainDestination.entries.forEach { dest ->
-                    val selected = currentDestination == dest
-                    NavigationBarItem(
-                        selected = selected,
-                        onClick = { currentDestination = dest },
-                        icon = {
-                            Icon(
-                                imageVector = dest.icon,
-                                contentDescription = dest.labelVi
-                            )
-                        },
-                        label = {
-                            Text(
-                                text = dest.labelVi,
-                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
-                            )
-                        }
-                    )
-                }
-            }
-        }
-    ) { innerPadding ->
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        // ① SOURCE: Content Layer — recorded into backdrop graphicsLayer (sibling to the floating glass bar)
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .layerBackdrop(backdrop)
         ) {
             when (currentDestination) {
                 MainDestination.HOME -> HomeScreen(
@@ -289,5 +279,27 @@ private fun LumiGlassMainApp(
                 )
             }
         }
+
+        // ② SURFACE: Floating Apple-style Liquid Glass Bottom Navigation Bar
+        LiquidGlassBottomBar(
+            items = MainDestination.entries.map {
+                LiquidNavDestinationItem(it, it.labelVi, it.icon)
+            },
+            selectedDestination = currentDestination,
+            onSelectDestination = { currentDestination = it },
+            backdrop = backdrop,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+        )
+
+        // ③ Floating Snackbar above the navigation bar
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = 90.dp)
+        )
     }
 }

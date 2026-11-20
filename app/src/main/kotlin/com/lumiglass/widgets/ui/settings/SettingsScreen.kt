@@ -5,7 +5,11 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -49,6 +53,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -59,6 +66,8 @@ import com.lumiglass.widgets.data.weather.OpenMeteoApiClient
 import com.lumiglass.widgets.data.weather.VietnamCityCatalog
 import com.lumiglass.widgets.model.GlassThemeMode
 import com.lumiglass.widgets.model.WidgetDataSnapshot
+import com.lumiglass.widgets.ui.glass.LiquidGlassButton
+import com.lumiglass.widgets.ui.glass.LiquidMaterialChip
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -418,11 +427,10 @@ fun SettingsScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 GlassThemeMode.entries.forEach { mode ->
-                    FilterChip(
-                        selected = globalSettings.appThemeMode == mode,
-                        onClick = { onUpdateGlobalSettings { it.copy(appThemeMode = mode) } },
-                        label = { Text(mode.labelVi) },
-                        modifier = Modifier.heightIn(min = 48.dp)
+                    LiquidMaterialChip(
+                        text = mode.labelVi,
+                        isSelected = globalSettings.appThemeMode == mode,
+                        onClick = { onUpdateGlobalSettings { it.copy(appThemeMode = mode) } }
                     )
                 }
             }
@@ -555,7 +563,7 @@ fun SettingsScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(100.dp))
     }
 }
 
@@ -565,12 +573,39 @@ private fun SettingsCard(
     title: String,
     content: @Composable () -> Unit
 ) {
-    Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-        modifier = Modifier.fillMaxWidth()
+    val dark = isSystemInDarkTheme()
+    val shape = RoundedCornerShape(22.dp)
+    val cardBrush = if (dark) {
+        Brush.verticalGradient(
+            listOf(
+                Color.White.copy(alpha = 0.12f),
+                Color.White.copy(alpha = 0.04f)
+            )
+        )
+    } else {
+        Brush.verticalGradient(
+            listOf(
+                Color.White.copy(alpha = 0.92f),
+                Color(0xFFF1F5F9).copy(alpha = 0.72f)
+            )
+        )
+    }
+    val rimBrush = Brush.verticalGradient(
+        listOf(
+            Color.White.copy(alpha = if (dark) 0.50f else 0.85f),
+            Color.White.copy(alpha = 0.08f)
+        )
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(cardBrush, shape)
+            .border(width = 0.9.dp, brush = rimBrush, shape = shape)
+            .padding(16.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = icon,

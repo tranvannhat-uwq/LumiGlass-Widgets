@@ -27,6 +27,13 @@
    - Tự động kiểm tra bản phát hành mới từ **GitHub Releases API**.
    - Tải gói `.apk` với thanh tiến trình trực tiếp bên trong ứng dụng và kích hoạt trình cài đặt hệ thống qua `FileProvider`.
 
+5. **Apple-style Liquid Glass In-App UI (v1.3.0)**:
+   - Toàn bộ giao diện ứng dụng được nâng cấp bằng công nghệ Liquid Glass cao cấp:
+     - **Thanh Navigation Bar nổi**: Khúc xạ trực tiếp màu sắc của các widget và thẻ nội dung cuộn bên dưới; con trỏ chuyển tab mượt mà bằng lò xo vật lý.
+     - **Nút bấm kính đàn hồi**: Biến dạng xúc giác đàn hồi tự nhiên với hàm cản trở `tanh` và phản quang viền sáng.
+     - **Thẻ vật liệu & Điều khiển kính**: Các thẻ Telemetry, thanh trượt Slider và công tắc Toggle kính lỏng tương tác sang trọng, hiện đại.
+     - **Tương thích & Fallback 100%**: Hỗ trợ AGSL RuntimeShader trên Android 13+ (API 33+) và tự động suy biến an toàn sang acrylic frosted trên các thiết bị thấp hơn.
+
 ## 📦 Cài đặt & Build
 
 - Tải file `.apk` mới nhất tại mục **[Releases](https://github.com/tranvannhat-uwq/LumiGlass-Widgets/releases)**.
