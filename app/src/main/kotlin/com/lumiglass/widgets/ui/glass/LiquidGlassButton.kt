@@ -25,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +37,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
@@ -61,6 +67,7 @@ fun LiquidGlassButton(
 ) {
     val dark = isSystemInDarkTheme()
     val scope = rememberCoroutineScope()
+    val currentOnClick by rememberUpdatedState(onClick)
     val pressProgress = remember { Animatable(0f) }
     var touchOffset by remember { mutableStateOf(Offset.Zero) }
 
@@ -125,8 +132,19 @@ fun LiquidGlassButton(
                                 )
                             }
                         },
-                        onTap = { onClick() }
+                        onTap = { currentOnClick() }
                     )
+                }
+            }
+            .semantics {
+                role = Role.Button
+                if (enabled) {
+                    onClick {
+                        currentOnClick()
+                        true
+                    }
+                } else {
+                    disabled()
                 }
             }
             .heightIn(min = 48.dp)

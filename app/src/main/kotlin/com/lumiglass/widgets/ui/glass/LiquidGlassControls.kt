@@ -5,6 +5,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -18,6 +20,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -36,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
@@ -54,7 +58,8 @@ fun LiquidGlassToggle(
     enabled: Boolean = true
 ) {
     val dark = isSystemInDarkTheme()
-    val isPressed = remember { mutableStateOf(false) }
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
 
     val trackWidth = 52.dp
     val trackHeight = 30.dp
@@ -71,7 +76,7 @@ fun LiquidGlassToggle(
     )
 
     val thumbScale by animateFloatAsState(
-        targetValue = if (isPressed.value) 1.22f else 1.0f,
+        targetValue = if (isPressed) 1.22f else 1.0f,
         animationSpec = spring(stiffness = Spring.StiffnessMedium),
         label = "thumbScale"
     )
@@ -111,20 +116,14 @@ fun LiquidGlassToggle(
             .clip(trackShape)
             .background(trackBrush, trackShape)
             .border(width = 0.8.dp, brush = trackRim, shape = trackShape)
-            .pointerInput(enabled) {
-                if (enabled) {
-                    detectTapGestures(
-                        onPress = {
-                            isPressed.value = true
-                            tryAwaitRelease()
-                            isPressed.value = false
-                        },
-                        onTap = {
-                            onCheckedChange(!checked)
-                        }
-                    )
-                }
-            }
+            .toggleable(
+                value = checked,
+                enabled = enabled,
+                role = Role.Switch,
+                interactionSource = interactionSource,
+                indication = null,
+                onValueChange = onCheckedChange
+            )
             .padding(thumbPadding),
         contentAlignment = Alignment.CenterStart
     ) {
