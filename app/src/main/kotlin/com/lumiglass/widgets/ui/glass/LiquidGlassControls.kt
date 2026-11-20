@@ -1,15 +1,12 @@
 package com.lumiglass.widgets.ui.glass
 
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -25,12 +22,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,9 +35,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 /**
  * Premium Apple-style Liquid Glass Toggle / Switch:
@@ -58,7 +54,6 @@ fun LiquidGlassToggle(
     enabled: Boolean = true
 ) {
     val dark = isSystemInDarkTheme()
-    val scope = rememberCoroutineScope()
     val isPressed = remember { mutableStateOf(false) }
 
     val trackWidth = 52.dp
@@ -171,11 +166,50 @@ fun LiquidGlassSlider(
     enabled: Boolean = true
 ) {
     val dark = isSystemInDarkTheme()
-    val scope = rememberCoroutineScope()
     var isDragging by remember { mutableStateOf(false) }
+    val currentValueRange by rememberUpdatedState(valueRange)
+    val currentOnValueChange by rememberUpdatedState(onValueChange)
 
     val normalizedValue = ((value - valueRange.start) / (valueRange.endInclusive - valueRange.start))
         .coerceIn(0f, 1f)
+
+    val thumbRadiusPx = with(LocalDensity.current) { 13.dp.toPx() }
+
+    fun updateValueAt(positionX: Float, widthPx: Float) {
+        val range = currentValueRange
+        val usableWidthPx = (widthPx - thumbRadiusPx * 2f).coerceAtLeast(1f)
+        var fraction = ((positionX - thumbRadiusPx) / usableWidthPx).coerceIn(0f, 1f)
+        if (steps > 0) {
+            val intervals = steps + 1
+            fraction = (fraction * intervals).roundToInt().toFloat() / intervals
+        }
+        currentOnValueChange(range.start + fraction * (range.endInclusive - range.start))
+    }
+
+    val interactionModifier = Modifier
+        .pointerInput(enabled, valueRange, steps, thumbRadiusPx) {
+            if (enabled) {
+                detectTapGestures { position ->
+                    updateValueAt(position.x, size.width.toFloat())
+                }
+            }
+        }
+        .pointerInput(enabled, valueRange, steps, thumbRadiusPx) {
+            if (enabled) {
+                detectHorizontalDragGestures(
+                    onDragStart = { position ->
+                        isDragging = true
+                        updateValueAt(position.x, size.width.toFloat())
+                    },
+                    onDragEnd = { isDragging = false },
+                    onDragCancel = { isDragging = false },
+                    onHorizontalDrag = { change, _ ->
+                        change.consume()
+                        updateValueAt(change.position.x, size.width.toFloat())
+                    }
+                )
+            }
+        }
 
     val thumbScale by animateFloatAsState(
         targetValue = if (isDragging) 1.25f else 1.0f,
@@ -186,7 +220,8 @@ fun LiquidGlassSlider(
     BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
-            .height(36.dp),
+            .height(36.dp)
+            .then(interactionModifier),
         contentAlignment = Alignment.CenterStart
     ) {
         val totalWidth = maxWidth
@@ -253,22 +288,6 @@ fun LiquidGlassSlider(
                     Brush.verticalGradient(listOf(Color.White, Color.White.copy(alpha = 0.3f))),
                     CircleShape
                 )
-                .pointerInput(enabled) {
-                    if (enabled) {
-                        detectHorizontalDragGestures(
-                            onDragStart = { isDragging = true },
-                            onDragEnd = { isDragging = false },
-                            onDragCancel = { isDragging = false },
-                            onHorizontalDrag = { change, dragAmount ->
-                                change.consume()
-                                val deltaFraction = dragAmount / usableWidth.toPx()
-                                val newFraction = (normalizedValue + deltaFraction).coerceIn(0f, 1f)
-                                val newValue = valueRange.start + newFraction * (valueRange.endInclusive - valueRange.start)
-                                onValueChange(newValue)
-                            }
-                        )
-                    }
-                }
         )
     }
 }
