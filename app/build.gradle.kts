@@ -7,14 +7,14 @@ plugins {
 
 android {
   namespace = "com.lumiglass.widgets"
-  compileSdk = 36
+  compileSdk = 34
 
   defaultConfig {
     applicationId = "com.lumiglass.widgets"
     minSdk = 26
     targetSdk = 34
-    versionCode = 9
-    versionName = "1.3.1"
+    versionCode = 10
+    versionName = "1.3.2"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -70,12 +70,6 @@ android {
       excludes += "/META-INF/{AL2.0,LGPL2.1}"
     }
   }
-
-  lint {
-    checkReleaseBuilds = false
-    abortOnError = false
-    disable += listOf("NullSafeMutableLiveData")
-  }
 }
 
 configurations.all {
@@ -107,9 +101,6 @@ dependencies {
   implementation(libs.androidx.compose.material.icons.extended)
   debugImplementation(libs.androidx.compose.ui.tooling)
   debugImplementation(libs.androidx.compose.ui.test.manifest)
-
-  // Liquid Glass Backdrop
-  implementation(libs.kyant.backdrop)
 
   // Navigation, DataStore, WorkManager, Coroutines, Serialization, OkHttp
   implementation(libs.androidx.navigation.compose)

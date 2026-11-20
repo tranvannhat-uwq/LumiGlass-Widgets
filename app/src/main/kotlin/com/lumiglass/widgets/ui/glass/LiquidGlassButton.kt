@@ -39,7 +39,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
-import com.kyant.backdrop.backdrops.LayerBackdrop
 import kotlinx.coroutines.launch
 import kotlin.math.tanh
 
@@ -54,7 +53,6 @@ import kotlin.math.tanh
 fun LiquidGlassButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    backdrop: LayerBackdrop? = null,
     shape: Shape = RoundedCornerShape(16.dp),
     tintColor: Color = Color.White.copy(alpha = 0.12f),
     elevation: Dp = 6.dp,
@@ -68,50 +66,35 @@ fun LiquidGlassButton(
 
     val contentColor = if (dark) Color.White else MaterialTheme.colorScheme.onSurface
 
-    val baseModifier = if (backdrop != null && isLiquidGlassShaderSupported()) {
-        modifier.liquidGlassSurface(
-            backdrop = backdrop,
-            shape = shape,
-            blurRadius = 12f,
-            refractionHeight = 18f,
-            refractionAmount = 18f,
-            tintColor = tintColor,
-            elevation = elevation,
-            rimWidth = 1.dp
+    // High-end Material Glass Palette
+    val bgBrush = if (dark) {
+        Brush.verticalGradient(
+            listOf(
+                Color.White.copy(alpha = 0.22f),
+                Color.White.copy(alpha = 0.08f)
+            )
         )
     } else {
-        // High-end Material Chip Fallback
-        val bgBrush = if (dark) {
-            Brush.verticalGradient(
-                listOf(
-                    Color.White.copy(alpha = 0.22f),
-                    Color.White.copy(alpha = 0.08f)
-                )
-            )
-        } else {
-            Brush.verticalGradient(
-                listOf(
-                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f),
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.90f)
-                )
-            )
-        }
-        val rimBrush = Brush.verticalGradient(
+        Brush.verticalGradient(
             listOf(
-                Color.White.copy(alpha = if (dark) 0.65f else 0.85f),
-                Color.White.copy(alpha = 0.10f)
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f),
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.90f)
             )
         )
+    }
+    val rimBrush = Brush.verticalGradient(
+        listOf(
+            Color.White.copy(alpha = if (dark) 0.65f else 0.85f),
+            Color.White.copy(alpha = 0.10f)
+        )
+    )
 
-        modifier
+    Box(
+        modifier = modifier
             .shadow(elevation = elevation, shape = shape)
             .clip(shape)
             .background(bgBrush, shape)
             .border(width = 1.dp, brush = rimBrush, shape = shape)
-    }
-
-    Box(
-        modifier = baseModifier
             .graphicsLayer {
                 val progress = pressProgress.value
                 val scale = lerp(1f, 0.96f, progress)
@@ -160,4 +143,3 @@ fun LiquidGlassButton(
         }
     }
 }
-

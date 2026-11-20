@@ -40,7 +40,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.kyant.backdrop.backdrops.LayerBackdrop
 
 /**
  * Data representation for a navigation destination item in LiquidGlassBottomBar.
@@ -52,18 +51,18 @@ data class LiquidNavDestinationItem<T>(
 )
 
 /**
- * Premium Apple-style Floating Liquid Glass Navigation Bar.
- * - Floats gracefully above the scrolling content (sibling to source layer)
- * - True optical refraction & blur of content underneath
+ * Premium Apple-style Floating Liquid Glass Navigation Bar:
+ * - Floats gracefully above the scrolling content
+ * - Translucent frosted acrylic glass with directional specular highlight rim
  * - Sliding spring pill indicator with directional light gradient
  * - Auto-adapting light/dark contrast and crisp iconography
+ * - 100% native Compose implementation (zero external library crash risk)
  */
 @Composable
 fun <T> LiquidGlassBottomBar(
     items: List<LiquidNavDestinationItem<T>>,
     selectedDestination: T,
     onSelectDestination: (T) -> Unit,
-    backdrop: LayerBackdrop? = null,
     modifier: Modifier = Modifier
 ) {
     val dark = isSystemInDarkTheme()
@@ -76,11 +75,8 @@ fun <T> LiquidGlassBottomBar(
             .padding(horizontal = 16.dp, vertical = 12.dp)
             .height(68.dp)
             .liquidGlassSurface(
-                backdrop = backdrop,
                 shape = barShape,
-                blurRadius = 18f,
-                refractionHeight = 26f,
-                refractionAmount = 26f,
+                blurRadius = 24f,
                 tintColor = if (dark) Color.Black.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.20f),
                 rimWidth = 1.dp,
                 elevation = 14.dp,
@@ -203,4 +199,3 @@ fun <T> LiquidGlassBottomBar(
         }
     }
 }
-

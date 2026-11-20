@@ -39,13 +39,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.lumiglass.widgets.model.WidgetSizeTier
 import com.lumiglass.widgets.ui.gallery.GalleryScreen
 import com.lumiglass.widgets.ui.glass.LiquidGlassBottomBar
 import com.lumiglass.widgets.ui.glass.LiquidNavDestinationItem
-import com.lumiglass.widgets.ui.glass.isLiquidGlassShaderSupported
 import com.lumiglass.widgets.ui.home.HomeScreen
 import com.lumiglass.widgets.ui.settings.SettingsScreen
 import com.lumiglass.widgets.ui.studio.WidgetStudioScreen
@@ -165,10 +162,6 @@ private fun LumiGlassMainApp(
     val statusMessage by viewModel.statusMessage.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
-    val canUseGlass = remember { isLiquidGlassShaderSupported() }
-    val backdrop = if (canUseGlass) {
-        runCatching { com.kyant.backdrop.backdrops.rememberLayerBackdrop() }.getOrNull()
-    } else null
 
     LaunchedEffect(initialOpenStudio, editingWidgetId) {
         if (initialOpenStudio || editingWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
@@ -189,17 +182,8 @@ private fun LumiGlassMainApp(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // ① SOURCE: Content Layer — recorded into backdrop graphicsLayer only if hardware shader is supported
-        val contentModifier = if (backdrop != null) {
-            Modifier
-                .fillMaxSize()
-                .layerBackdrop(backdrop)
-        } else {
-            Modifier.fillMaxSize()
-        }
-
         Box(
-            modifier = contentModifier
+            modifier = Modifier.fillMaxSize()
         ) {
             when (currentDestination) {
                 MainDestination.HOME -> HomeScreen(
@@ -297,7 +281,6 @@ private fun LumiGlassMainApp(
             },
             selectedDestination = currentDestination,
             onSelectDestination = { currentDestination = it },
-            backdrop = backdrop,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
