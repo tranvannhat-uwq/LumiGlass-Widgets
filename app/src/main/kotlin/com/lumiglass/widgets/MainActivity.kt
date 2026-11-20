@@ -177,13 +177,33 @@ private fun LumiGlassMainApp(
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
+    Scaffold(
+        snackbarHost = {
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier
+                    .navigationBarsPadding()
+                    .padding(bottom = 76.dp)
+            )
+        },
+        bottomBar = {
+            if (!isLauncherConfigureMode) {
+                LiquidGlassBottomBar(
+                    items = MainDestination.entries.map {
+                        LiquidNavDestinationItem(it, it.labelVi, it.icon)
+                    },
+                    selectedDestination = currentDestination,
+                    onSelectDestination = { currentDestination = it },
+                    modifier = Modifier.navigationBarsPadding()
+                )
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { innerPadding ->
         Box(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = innerPadding.calculateBottomPadding())
         ) {
             when (currentDestination) {
                 MainDestination.HOME -> HomeScreen(
@@ -273,26 +293,5 @@ private fun LumiGlassMainApp(
                 )
             }
         }
-
-        // ② SURFACE: Floating Apple-style Liquid Glass Bottom Navigation Bar
-        LiquidGlassBottomBar(
-            items = MainDestination.entries.map {
-                LiquidNavDestinationItem(it, it.labelVi, it.icon)
-            },
-            selectedDestination = currentDestination,
-            onSelectDestination = { currentDestination = it },
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
-        )
-
-        // ③ Floating Snackbar above the navigation bar
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
-                .padding(bottom = 90.dp)
-        )
     }
 }
