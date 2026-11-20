@@ -12,9 +12,13 @@ class LumiGlassApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
-            WidgetConfigRepository(this@LumiGlassApp).ensureInitializedAndRestored()
+        runCatching {
+            CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+                runCatching {
+                    WidgetConfigRepository(this@LumiGlassApp).ensureInitializedAndRestored()
+                }
+            }
+            WidgetUpdateScheduler.ensurePeriodicAndMidnightScheduled(this)
         }
-        WidgetUpdateScheduler.ensurePeriodicAndMidnightScheduled(this)
     }
 }

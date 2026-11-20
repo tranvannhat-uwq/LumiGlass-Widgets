@@ -45,6 +45,7 @@ import com.lumiglass.widgets.model.WidgetSizeTier
 import com.lumiglass.widgets.ui.gallery.GalleryScreen
 import com.lumiglass.widgets.ui.glass.LiquidGlassBottomBar
 import com.lumiglass.widgets.ui.glass.LiquidNavDestinationItem
+import com.lumiglass.widgets.ui.glass.isLiquidGlassShaderSupported
 import com.lumiglass.widgets.ui.home.HomeScreen
 import com.lumiglass.widgets.ui.settings.SettingsScreen
 import com.lumiglass.widgets.ui.studio.WidgetStudioScreen
@@ -164,7 +165,10 @@ private fun LumiGlassMainApp(
     val statusMessage by viewModel.statusMessage.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
-    val backdrop = com.kyant.backdrop.backdrops.rememberLayerBackdrop()
+    val canUseGlass = remember { isLiquidGlassShaderSupported() }
+    val backdrop = if (canUseGlass) {
+        runCatching { com.kyant.backdrop.backdrops.rememberLayerBackdrop() }.getOrNull()
+    } else null
 
     LaunchedEffect(initialOpenStudio, editingWidgetId) {
         if (initialOpenStudio || editingWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
@@ -185,11 +189,17 @@ private fun LumiGlassMainApp(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // ① SOURCE: Content Layer — recorded into backdrop graphicsLayer (sibling to the floating glass bar)
-        Box(
-            modifier = Modifier
+        // ① SOURCE: Content Layer — recorded into backdrop graphicsLayer only if hardware shader is supported
+        val contentModifier = if (backdrop != null) {
+            Modifier
                 .fillMaxSize()
                 .layerBackdrop(backdrop)
+        } else {
+            Modifier.fillMaxSize()
+        }
+
+        Box(
+            modifier = contentModifier
         ) {
             when (currentDestination) {
                 MainDestination.HOME -> HomeScreen(

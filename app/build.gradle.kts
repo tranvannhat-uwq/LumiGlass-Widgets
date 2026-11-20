@@ -13,8 +13,8 @@ android {
     applicationId = "com.lumiglass.widgets"
     minSdk = 26
     targetSdk = 34
-    versionCode = 8
-    versionName = "1.3.0"
+    versionCode = 9
+    versionName = "1.3.1"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -108,9 +108,8 @@ dependencies {
   debugImplementation(libs.androidx.compose.ui.tooling)
   debugImplementation(libs.androidx.compose.ui.test.manifest)
 
-  // Liquid Glass Backdrop & Shapes
+  // Liquid Glass Backdrop
   implementation(libs.kyant.backdrop)
-  implementation(libs.kyant.shapes)
 
   // Navigation, DataStore, WorkManager, Coroutines, Serialization, OkHttp
   implementation(libs.androidx.navigation.compose)

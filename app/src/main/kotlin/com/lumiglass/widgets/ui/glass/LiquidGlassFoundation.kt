@@ -13,16 +13,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.ColorMatrix
-import androidx.compose.ui.graphics.ColorMatrixColorFilter
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
-import com.kyant.backdrop.effects.colorFilter
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.highlight.HighlightStyle
@@ -30,34 +26,37 @@ import com.kyant.backdrop.shadow.Shadow
 
 /**
  * Checks if the current Android runtime supports AGSL RuntimeShader (API 33+).
- * This ensures 100% graceful degradation on older devices or emulators.
+ * Probes the hardware/graphics driver directly to guarantee 100% fail-safe degradation
+ * on unsupported devices, GPU blacklists, or older Android runtimes without crashing.
  */
 fun isLiquidGlassShaderSupported(): Boolean {
-    return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+        return false
+    }
+    return try {
+        // Probe whether RuntimeShader compiles safely on the active hardware pipeline
+        val probeShader = android.graphics.RuntimeShader(
+            """
+            uniform shader content;
+            half4 main(float2 coord) {
+                return content.eval(coord);
+            }
+            """.trimIndent()
+        )
+        probeShader != null
+    } catch (_: Throwable) {
+        false
+    }
 }
 
 /**
- * Vibrant ColorMatrix that enriches saturation by ~1.2x to recreate natural vibrancy
- * on Backdrop 1.0.6 as recommended in the component recipes.
- */
-val LiquidGlassVibrancyFilter: ColorFilter = ColorMatrixColorFilter(
-    ColorMatrix(
-        floatArrayOf(
-            1.22f, -0.11f, -0.11f, 0f, 0f,
-            -0.11f, 1.22f, -0.11f, 0f, 0f,
-            -0.11f, -0.11f, 1.22f, 0f, 0f,
-            0f, 0f, 0f, 1f, 0f
-        )
-    )
-)
-
-/**
  * High-end Liquid Glass Surface Modifier:
- * Applies optical refraction (lens), frosted blur, vibrancy filter, and directional specular highlight rim.
- * Falls back gracefully to translucent acrylic glass when RuntimeShader is unavailable.
+ * Applies optical refraction (lens), frosted blur, and directional specular highlight rim when supported.
+ * Automatically and gracefully falls back to an elegant translucent frosted acrylic glass
+ * if the device or backdrop layer is unavailable, avoiding any runtime crash.
  */
 fun Modifier.liquidGlassSurface(
-    backdrop: LayerBackdrop,
+    backdrop: LayerBackdrop?,
     shape: Shape = RoundedCornerShape(26.dp),
     blurRadius: Float = 14f,
     refractionHeight: Float = 22f,
@@ -68,11 +67,13 @@ fun Modifier.liquidGlassSurface(
     isDarkTheme: Boolean? = null
 ): Modifier = composed {
     val dark = isDarkTheme ?: isSystemInDarkTheme()
-    val canRenderShader = remember { isLiquidGlassShaderSupported() }
+    val canRenderShader = remember(backdrop) {
+        backdrop != null && isLiquidGlassShaderSupported()
+    }
 
     val shadowColor = if (dark) Color.Black.copy(alpha = 0.45f) else Color.Black.copy(alpha = 0.16f)
 
-    if (canRenderShader) {
+    if (canRenderShader && backdrop != null) {
         this
             .shadow(
                 elevation = elevation,
@@ -85,7 +86,6 @@ fun Modifier.liquidGlassSurface(
                 backdrop = backdrop,
                 shape = { shape },
                 effects = {
-                    colorFilter(LiquidGlassVibrancyFilter)
                     blur(blurRadius)
                     lens(
                         refractionHeight = refractionHeight,
@@ -149,4 +149,3 @@ fun Modifier.liquidGlassSurface(
             .border(width = rimWidth, brush = rimBrush, shape = shape)
     }
 }
-

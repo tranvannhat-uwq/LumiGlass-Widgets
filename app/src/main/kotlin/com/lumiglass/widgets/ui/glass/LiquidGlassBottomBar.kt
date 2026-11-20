@@ -63,7 +63,7 @@ fun <T> LiquidGlassBottomBar(
     items: List<LiquidNavDestinationItem<T>>,
     selectedDestination: T,
     onSelectDestination: (T) -> Unit,
-    backdrop: LayerBackdrop,
+    backdrop: LayerBackdrop? = null,
     modifier: Modifier = Modifier
 ) {
     val dark = isSystemInDarkTheme()
@@ -74,6 +74,7 @@ fun <T> LiquidGlassBottomBar(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp)
+            .height(68.dp)
             .liquidGlassSurface(
                 backdrop = backdrop,
                 shape = barShape,
@@ -85,7 +86,6 @@ fun <T> LiquidGlassBottomBar(
                 elevation = 14.dp,
                 isDarkTheme = dark
             )
-            .height(68.dp)
             .padding(horizontal = 8.dp, vertical = 6.dp)
     ) {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
