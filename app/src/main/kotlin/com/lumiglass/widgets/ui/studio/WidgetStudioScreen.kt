@@ -160,7 +160,6 @@ fun WidgetStudioScreen(
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     var showSavePresetDialog by rememberSaveable { mutableStateOf(false) }
     var customPresetNameInput by rememberSaveable { mutableStateOf("") }
-    var isPreviewExpanded by rememberSaveable { mutableStateOf(false) }
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -250,11 +249,8 @@ fun WidgetStudioScreen(
                 ) {
                     Surface(
                         shape = RoundedCornerShape(20.dp),
-                        color = if (isPreviewExpanded) MaterialTheme.colorScheme.primaryContainer
-                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(20.dp))
-                            .clickable { isPreviewExpanded = !isPreviewExpanded }
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f),
+                        modifier = Modifier.clip(RoundedCornerShape(20.dp))
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp),
@@ -264,16 +260,14 @@ fun WidgetStudioScreen(
                                 imageVector = Icons.Default.AutoAwesome,
                                 contentDescription = null,
                                 modifier = Modifier.size(13.dp),
-                                tint = if (isPreviewExpanded) MaterialTheme.colorScheme.onPrimaryContainer
-                                else MaterialTheme.colorScheme.primary
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = if (isPreviewExpanded) "Thu nhỏ" else "Xem to",
+                                text = "Chuẩn 1:1 Launcher",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isPreviewExpanded) MaterialTheme.colorScheme.onPrimaryContainer
-                                else MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                         }
                     }
@@ -309,7 +303,7 @@ fun WidgetStudioScreen(
                 onSizeTierChange = { newTier ->
                     onUpdateConfig { it.copy(preferredSizeTier = newTier) }
                 },
-                isCompact = !isPreviewExpanded
+                isCompact = false
             )
         }
 

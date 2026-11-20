@@ -225,11 +225,11 @@ object WidgetRemoteViewsRenderer {
         val secondsFactor = if (config.showSeconds) 0.78f else 1.0f
 
         val baseSingleSp = when (tier) {
-            WidgetSizeTier.MINI_2X1 -> 25f
+            WidgetSizeTier.MINI_2X1 -> 26f
             WidgetSizeTier.COMPACT_2X2 -> 34f
-            WidgetSizeTier.ESSENTIAL_4X2 -> 35f
-            WidgetSizeTier.PREMIUM_4X3 -> 40f
-            WidgetSizeTier.DASHBOARD_4X4 -> 44f
+            WidgetSizeTier.ESSENTIAL_4X2 -> 36f
+            WidgetSizeTier.PREMIUM_4X3 -> 42f
+            WidgetSizeTier.DASHBOARD_4X4 -> 46f
         } * combinedScale * secondsFactor
 
         if (!config.splitClockTwoLines) {
@@ -283,9 +283,9 @@ object WidgetRemoteViewsRenderer {
         val dateSp = when (tier) {
             WidgetSizeTier.MINI_2X1 -> 11f
             WidgetSizeTier.COMPACT_2X2 -> 12f
-            WidgetSizeTier.ESSENTIAL_4X2 -> 12.5f
-            WidgetSizeTier.PREMIUM_4X3 -> 14f
-            WidgetSizeTier.DASHBOARD_4X4 -> 14.5f
+            WidgetSizeTier.ESSENTIAL_4X2 -> 11.8f
+            WidgetSizeTier.PREMIUM_4X3 -> 13f
+            WidgetSizeTier.DASHBOARD_4X4 -> 14f
         } * combinedScale
 
         val lunarSp = (dateSp * 0.92f).coerceAtLeast(10f)
@@ -376,9 +376,9 @@ object WidgetRemoteViewsRenderer {
         val weather = snapshot.weatherInfo
         val iconSizeDp = (when (tier) {
             WidgetSizeTier.COMPACT_2X2 -> 20
-            WidgetSizeTier.ESSENTIAL_4X2 -> 28
-            WidgetSizeTier.PREMIUM_4X3 -> 34
-            WidgetSizeTier.DASHBOARD_4X4 -> 42
+            WidgetSizeTier.ESSENTIAL_4X2 -> 26
+            WidgetSizeTier.PREMIUM_4X3 -> 32
+            WidgetSizeTier.DASHBOARD_4X4 -> 34
             else -> 24
         } * config.iconScale).toInt().coerceIn(16, 60)
 
@@ -402,12 +402,18 @@ object WidgetRemoteViewsRenderer {
         val tempSp = when (tier) {
             WidgetSizeTier.COMPACT_2X2 -> 12.5f
             WidgetSizeTier.ESSENTIAL_4X2 -> 15.5f
-            WidgetSizeTier.PREMIUM_4X3 -> 17.5f
-            WidgetSizeTier.DASHBOARD_4X4 -> 21f
+            WidgetSizeTier.PREMIUM_4X3 -> 17f
+            WidgetSizeTier.DASHBOARD_4X4 -> 19f
             else -> 14f
         } * combinedScale
 
-        val condSp = (tempSp * 0.72f).coerceIn(10f, 15f)
+        val condSp = when (tier) {
+            WidgetSizeTier.COMPACT_2X2 -> 10.5f
+            WidgetSizeTier.ESSENTIAL_4X2 -> 10.8f
+            WidgetSizeTier.PREMIUM_4X3 -> 11.5f
+            WidgetSizeTier.DASHBOARD_4X4 -> 13.0f
+            else -> 11f
+        } * combinedScale
 
         views.setTextViewText(R.id.widget_weather_temp, applyTypographySpans(tempText, config))
         views.setTextViewTextSize(R.id.widget_weather_temp, TypedValue.COMPLEX_UNIT_SP, tempSp)
@@ -501,11 +507,11 @@ object WidgetRemoteViewsRenderer {
                 fallbackArgb = primaryTextArgb
             )
             val pctSp = when (tier) {
-                WidgetSizeTier.COMPACT_2X2 -> 11f
-                WidgetSizeTier.ESSENTIAL_4X2 -> 11.5f
-                WidgetSizeTier.PREMIUM_4X3 -> 13.5f
-                WidgetSizeTier.DASHBOARD_4X4 -> 14.5f
-                else -> 12f
+                WidgetSizeTier.COMPACT_2X2 -> 10.5f
+                WidgetSizeTier.ESSENTIAL_4X2 -> 11.0f
+                WidgetSizeTier.PREMIUM_4X3 -> 12.5f
+                WidgetSizeTier.DASHBOARD_4X4 -> 13.0f
+                else -> 11.5f
             } * combinedScale
 
             views.setTextViewText(R.id.widget_battery_percent_text, applyTypographySpans(pctText, config))
@@ -618,24 +624,24 @@ object WidgetRemoteViewsRenderer {
         val combinedScale = (scaleFactor * config.textScale * config.calendarStripScale).coerceIn(0.60f, 1.45f)
 
         val baseWeekdaySp = when (tier) {
-            WidgetSizeTier.ESSENTIAL_4X2 -> 9.2f
+            WidgetSizeTier.ESSENTIAL_4X2 -> 9.5f
             WidgetSizeTier.PREMIUM_4X3 -> 10.0f
             WidgetSizeTier.DASHBOARD_4X4 -> 10.5f
-            else -> 9.2f
+            else -> 9.5f
         } * combinedScale
 
         val baseSolarSp = when (tier) {
-            WidgetSizeTier.ESSENTIAL_4X2 -> 12.8f
+            WidgetSizeTier.ESSENTIAL_4X2 -> 13.0f
             WidgetSizeTier.PREMIUM_4X3 -> 14.0f
             WidgetSizeTier.DASHBOARD_4X4 -> 15.0f
-            else -> 12.8f
+            else -> 13.0f
         } * combinedScale
 
         val baseLunarSp = when (tier) {
-            WidgetSizeTier.ESSENTIAL_4X2 -> 8.8f
+            WidgetSizeTier.ESSENTIAL_4X2 -> 9.0f
             WidgetSizeTier.PREMIUM_4X3 -> 9.5f
             WidgetSizeTier.DASHBOARD_4X4 -> 10.0f
-            else -> 8.8f
+            else -> 9.0f
         } * combinedScale
 
         for (i in 0 until 7) {

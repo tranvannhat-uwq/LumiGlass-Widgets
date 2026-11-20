@@ -92,7 +92,10 @@ class WidgetConfigRepository(private val context: Context) {
         val raw = prefs[widgetKey(appWidgetId)]
         if (!raw.isNullOrBlank()) {
             runCatching { json.decodeFromString<WidgetConfig>(raw) }.getOrNull()?.let { saved ->
-                return saved.copy(appWidgetId = appWidgetId)
+                return saved.copy(
+                    appWidgetId = appWidgetId,
+                    preferredSizeTier = fallbackTier
+                )
             }
         }
         val draft = getStudioDraft()

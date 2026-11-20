@@ -20,7 +20,7 @@ enum class WidgetSizeTier(
         titleVi = "Mini Clock",
         descriptionVi = "Chỉ hiển thị đồng hồ và ngày. Cực kỳ gọn gàng.",
         defaultWidthDp = 160,
-        defaultHeightDp = 76,
+        defaultHeightDp = 72,
         cellsWidth = 2,
         cellsHeight = 1
     ),
@@ -29,8 +29,8 @@ enum class WidgetSizeTier(
         gridLabel = "2×2",
         titleVi = "Compact Glass",
         descriptionVi = "Đồng hồ lớn, ngày dương, ngày âm và thời tiết hoặc pin.",
-        defaultWidthDp = 170,
-        defaultHeightDp = 170,
+        defaultWidthDp = 160,
+        defaultHeightDp = 160,
         cellsWidth = 2,
         cellsHeight = 2
     ),
@@ -39,8 +39,8 @@ enum class WidgetSizeTier(
         gridLabel = "4×2",
         titleVi = "Essential Glass",
         descriptionVi = "Đồng hồ lớn bên trái; thời tiết, âm lịch và pin bên phải.",
-        defaultWidthDp = 330,
-        defaultHeightDp = 156,
+        defaultWidthDp = 328,
+        defaultHeightDp = 142,
         cellsWidth = 4,
         cellsHeight = 2
     ),
@@ -49,8 +49,8 @@ enum class WidgetSizeTier(
         gridLabel = "4×3",
         titleVi = "Premium Glass",
         descriptionVi = "Đồng hồ, ngày tháng, âm lịch Can Chi, thời tiết và pin cân đối cao cấp.",
-        defaultWidthDp = 330,
-        defaultHeightDp = 236,
+        defaultWidthDp = 328,
+        defaultHeightDp = 212,
         cellsWidth = 4,
         cellsHeight = 3
     ),
@@ -59,8 +59,8 @@ enum class WidgetSizeTier(
         gridLabel = "4×4",
         titleVi = "Dashboard Glass",
         descriptionVi = "Hiển thị đầy đủ dữ liệu, phân vùng kính tinh tế, tùy biến sâu.",
-        defaultWidthDp = 330,
-        defaultHeightDp = 320,
+        defaultWidthDp = 328,
+        defaultHeightDp = 284,
         cellsWidth = 4,
         cellsHeight = 4
     )

@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -120,84 +121,78 @@ fun WallpaperStageWidgetPreview(
 ) {
     val tier = config.preferredSizeTier
     val effectiveSnapshot = snapshot.copy(isSystemDarkTheme = wallpaper.isDark)
-    val previewScale = if (isCompact) {
-        when (tier) {
-            WidgetSizeTier.MINI_2X1 -> 0.88f
-            WidgetSizeTier.COMPACT_2X2 -> 0.74f
-            WidgetSizeTier.ESSENTIAL_4X2 -> 0.74f
-            WidgetSizeTier.PREMIUM_4X3 -> 0.64f
-            WidgetSizeTier.DASHBOARD_4X4 -> 0.55f
-        }
-    } else 1.0f
 
-    Column(
+    BoxWithConstraints(
         modifier = modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        contentAlignment = Alignment.Center
     ) {
-        // Wallpaper Stage Box
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(if (isCompact) 20.dp else 28.dp))
-                .background(Brush.linearGradient(wallpaper.gradientColors))
-                .border(
-                    width = 1.dp,
-                    color = Color.White.copy(alpha = 0.16f),
-                    shape = RoundedCornerShape(if (isCompact) 20.dp else 28.dp)
-                )
-                .padding(
-                    horizontal = if (isCompact) 10.dp else 16.dp,
-                    vertical = if (isCompact) 8.dp else 18.dp
-                ),
-            contentAlignment = Alignment.Center
+        // True 1:1 scale with actual home screen launcher widget
+        val availableWidth = maxWidth
+        val previewScale = if (availableWidth < 348.dp) {
+            ((availableWidth - 20.dp) / 328.dp).coerceIn(0.84f, 1.0f)
+        } else {
+            1.0f
+        }
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Decorative background orbs to demonstrate glass translucency & edge refraction
-            Canvas(modifier = Modifier.matchParentSize()) {
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            wallpaper.orbColor1.copy(alpha = 0.50f),
-                            Color.Transparent
+            // Wallpaper Stage Box
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Brush.linearGradient(wallpaper.gradientColors))
+                    .border(
+                        width = 1.dp,
+                        color = Color.White.copy(alpha = 0.18f),
+                        shape = RoundedCornerShape(24.dp)
+                    )
+                    .padding(horizontal = 8.dp, vertical = 12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                // Decorative background orbs to demonstrate glass translucency & edge refraction
+                Canvas(modifier = Modifier.matchParentSize()) {
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                wallpaper.orbColor1.copy(alpha = 0.50f),
+                                Color.Transparent
+                            ),
+                            center = Offset(size.width * 0.25f, size.height * 0.28f),
+                            radius = size.minDimension * 0.55f
                         ),
                         center = Offset(size.width * 0.25f, size.height * 0.28f),
                         radius = size.minDimension * 0.55f
-                    ),
-                    center = Offset(size.width * 0.25f, size.height * 0.28f),
-                    radius = size.minDimension * 0.55f
-                )
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            wallpaper.orbColor2.copy(alpha = 0.45f),
-                            Color.Transparent
+                    )
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                wallpaper.orbColor2.copy(alpha = 0.45f),
+                                Color.Transparent
+                            ),
+                            center = Offset(size.width * 0.76f, size.height * 0.72f),
+                            radius = size.minDimension * 0.52f
                         ),
                         center = Offset(size.width * 0.76f, size.height * 0.72f),
                         radius = size.minDimension * 0.52f
-                    ),
-                    center = Offset(size.width * 0.76f, size.height * 0.72f),
-                    radius = size.minDimension * 0.52f
+                    )
+                }
+
+                LiveWidgetGlassCard(
+                    config = config,
+                    snapshot = effectiveSnapshot,
+                    tier = tier,
+                    previewScale = previewScale
                 )
             }
 
-            LiveWidgetGlassCard(
-                config = config,
-                snapshot = effectiveSnapshot,
-                tier = tier,
-                previewScale = previewScale
-            )
-        }
-
-        if (!isCompact) {
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Wallpaper Simulator & Size Switcher Controls
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Wallpaper selector chips
+            // Wallpaper Simulator Selector Chips (Always visible)
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -205,6 +200,7 @@ fun WallpaperStageWidgetPreview(
                     val selected = wp == wallpaper
                     Box(
                         modifier = Modifier
+                            .weight(1f)
                             .clip(RoundedCornerShape(50))
                             .background(
                                 if (selected) MaterialTheme.colorScheme.primaryContainer
@@ -217,16 +213,17 @@ fun WallpaperStageWidgetPreview(
                                 shape = RoundedCornerShape(50)
                             )
                             .clickable { onWallpaperChange(wp) }
-                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                            .padding(vertical = 6.dp),
+                        contentAlignment = Alignment.Center
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
                                 modifier = Modifier
-                                    .size(10.dp)
+                                    .size(9.dp)
                                     .clip(CircleShape)
                                     .background(Brush.linearGradient(wp.gradientColors))
                             )
-                            Spacer(modifier = Modifier.width(5.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = wp.labelVi,
                                 style = MaterialTheme.typography.labelSmall,
@@ -238,41 +235,41 @@ fun WallpaperStageWidgetPreview(
                     }
                 }
             }
-        }
 
-        if (onSizeTierChange != null) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                WidgetSizeTier.entries.forEach { itemTier ->
-                    val isSelected = itemTier == tier
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(
-                                if (isSelected) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+            // Size Tier Switcher (Always visible when onSizeTierChange is provided)
+            if (onSizeTierChange != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    WidgetSizeTier.entries.forEach { itemTier ->
+                        val isSelected = itemTier == tier
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    if (isSelected) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                                )
+                                .clickable { onSizeTierChange(itemTier) }
+                                .padding(vertical = 7.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = itemTier.gridLabel,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isSelected) MaterialTheme.colorScheme.onPrimary
+                                else MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            .clickable { onSizeTierChange(itemTier) }
-                            .padding(vertical = 7.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = itemTier.gridLabel,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary
-                            else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        }
                     }
                 }
             }
         }
     }
-}
 }
 
 /**
@@ -292,11 +289,11 @@ fun LiveWidgetGlassCard(
     val accentColor = Color(palette.accentTextArgb)
 
     val (cardWidthDp, cardHeightDp) = when (tier) {
-        WidgetSizeTier.MINI_2X1 -> (176 * previewScale).dp to (84 * previewScale).dp
-        WidgetSizeTier.COMPACT_2X2 -> (184 * previewScale).dp to (184 * previewScale).dp
-        WidgetSizeTier.ESSENTIAL_4X2 -> (328 * previewScale).dp to (178 * previewScale).dp
-        WidgetSizeTier.PREMIUM_4X3 -> (328 * previewScale).dp to (236 * previewScale).dp
-        WidgetSizeTier.DASHBOARD_4X4 -> (328 * previewScale).dp to (302 * previewScale).dp
+        WidgetSizeTier.MINI_2X1 -> (160 * previewScale).dp to (72 * previewScale).dp
+        WidgetSizeTier.COMPACT_2X2 -> (160 * previewScale).dp to (160 * previewScale).dp
+        WidgetSizeTier.ESSENTIAL_4X2 -> (328 * previewScale).dp to (142 * previewScale).dp
+        WidgetSizeTier.PREMIUM_4X3 -> (328 * previewScale).dp to (212 * previewScale).dp
+        WidgetSizeTier.DASHBOARD_4X4 -> (328 * previewScale).dp to (284 * previewScale).dp
     }
 
     val hasRightContent = config.showWeather || config.showLunarDate ||
@@ -361,7 +358,7 @@ fun LiveWidgetGlassCard(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(pad),
+                        .padding((10 * previewScale).dp),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = horizontalAlign
                 ) {
@@ -369,7 +366,7 @@ fun LiveWidgetGlassCard(
                         PreviewClockText(
                             config = config,
                             snapshot = snapshot,
-                            baseSp = 24f * previewScale,
+                            baseSp = 26f * previewScale,
                             primaryColor = primaryColor,
                             accentColor = accentColor,
                             paletteShadowArgb = palette.shadowTextArgb,
@@ -380,8 +377,8 @@ fun LiveWidgetGlassCard(
                         config = config,
                         snapshot = snapshot,
                         tier = tier,
-                        dateSp = 10.5f * previewScale,
-                        lunarSp = 9.8f * previewScale,
+                        dateSp = 11f * previewScale,
+                        lunarSp = 10f * previewScale,
                         secondaryColor = secondaryColor,
                         accentColor = accentColor,
                         paletteShadowArgb = palette.shadowTextArgb,
@@ -394,7 +391,7 @@ fun LiveWidgetGlassCard(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(pad),
+                        .padding((12 * previewScale).dp),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = horizontalAlign
                 ) {
@@ -414,20 +411,20 @@ fun LiveWidgetGlassCard(
                         config = config,
                         snapshot = snapshot,
                         tier = tier,
-                        dateSp = 11.5f * previewScale,
-                        lunarSp = 10.5f * previewScale,
+                        dateSp = 12f * previewScale,
+                        lunarSp = 10.8f * previewScale,
                         secondaryColor = secondaryColor,
                         accentColor = accentColor,
                         paletteShadowArgb = palette.shadowTextArgb,
                         textAlign = textAlign
                     )
                     if (config.showWeather) {
-                        Spacer(modifier = Modifier.height(5.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
                         PreviewWeatherCluster(
                             config = config,
                             snapshot = snapshot,
-                            iconSizeDp = (18 * previewScale).dp,
-                            tempSp = 12f * previewScale,
+                            iconSizeDp = (20 * previewScale).dp,
+                            tempSp = 12.5f * previewScale,
                             condSp = 10.5f * previewScale,
                             showDetails = false,
                             primaryColor = primaryColor,
@@ -458,7 +455,7 @@ fun LiveWidgetGlassCard(
                         .fillMaxSize()
                         .padding(
                             horizontal = (14 * previewScale).dp,
-                            vertical = (9 * previewScale).dp
+                            vertical = (8 * previewScale).dp
                         )
                 ) {
                     // Upper 62%: Left Clock+Date | Right Weather+Lunar+Battery (Moved UP)
@@ -481,7 +478,7 @@ fun LiveWidgetGlassCard(
                                     PreviewClockText(
                                         config = config,
                                         snapshot = snapshot,
-                                        baseSp = 34f * previewScale,
+                                        baseSp = 36f * previewScale,
                                         primaryColor = primaryColor,
                                         accentColor = accentColor,
                                         paletteShadowArgb = palette.shadowTextArgb,
@@ -496,7 +493,7 @@ fun LiveWidgetGlassCard(
                                         text = snapshot.gregorianDateText,
                                         style = buildGlassTextStyle(
                                             config = config,
-                                            fontSize = (11f * previewScale * config.textScale * config.dateScale).sp,
+                                            fontSize = (11.8f * previewScale * config.textScale * config.dateScale).sp,
                                             color = secondaryColor,
                                             shadowArgb = palette.shadowTextArgb,
                                             isHeader = false
@@ -521,9 +518,9 @@ fun LiveWidgetGlassCard(
                                     PreviewWeatherCluster(
                                         config = config,
                                         snapshot = snapshot,
-                                        iconSizeDp = (24 * previewScale).dp,
-                                        tempSp = 14.5f * previewScale,
-                                        condSp = 10f * previewScale,
+                                        iconSizeDp = (26 * previewScale).dp,
+                                        tempSp = 15.5f * previewScale,
+                                        condSp = 10.8f * previewScale,
                                         showDetails = true,
                                         primaryColor = primaryColor,
                                         secondaryColor = secondaryColor,
@@ -541,7 +538,7 @@ fun LiveWidgetGlassCard(
                                     ),
                                     style = buildGlassTextStyle(
                                         config = config,
-                                        fontSize = (10.2f * previewScale * config.textScale).sp,
+                                        fontSize = (10.8f * previewScale * config.textScale).sp,
                                         color = accentColor,
                                         shadowArgb = palette.shadowTextArgb,
                                         isHeader = false
@@ -557,7 +554,7 @@ fun LiveWidgetGlassCard(
                                         config = config,
                                         snapshot = snapshot,
                                         tier = tier,
-                                        textSp = 10.5f * previewScale,
+                                        textSp = 11.0f * previewScale,
                                         primaryColor = primaryColor,
                                         secondaryColor = secondaryColor,
                                         palettePrimaryArgb = palette.primaryTextArgb,
@@ -599,10 +596,10 @@ fun LiveWidgetGlassCard(
                             vertical = (10 * previewScale).dp
                         )
                 ) {
-                    // Upper 64%: Left Clock+Date | Right Weather+Lunar+Battery
+                    // Upper 66%: Left Clock+Date | Right Weather+Lunar+Battery
                     Row(
                         modifier = Modifier
-                            .weight(0.64f)
+                            .weight(0.66f)
                             .fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -617,7 +614,7 @@ fun LiveWidgetGlassCard(
                                     PreviewClockText(
                                         config = config,
                                         snapshot = snapshot,
-                                        baseSp = 40f * previewScale,
+                                        baseSp = 42f * previewScale,
                                         primaryColor = primaryColor,
                                         accentColor = accentColor,
                                         paletteShadowArgb = palette.shadowTextArgb,
@@ -632,7 +629,7 @@ fun LiveWidgetGlassCard(
                                         text = snapshot.gregorianDateText,
                                         style = buildGlassTextStyle(
                                             config = config,
-                                            fontSize = (12.5f * previewScale * config.textScale * config.dateScale).sp,
+                                            fontSize = (13f * previewScale * config.textScale * config.dateScale).sp,
                                             color = secondaryColor,
                                             shadowArgb = palette.shadowTextArgb,
                                             isHeader = false
@@ -655,9 +652,9 @@ fun LiveWidgetGlassCard(
                                     PreviewWeatherCluster(
                                         config = config,
                                         snapshot = snapshot,
-                                        iconSizeDp = (30 * previewScale).dp,
-                                        tempSp = 16.5f * previewScale,
-                                        condSp = 11f * previewScale,
+                                        iconSizeDp = (32 * previewScale).dp,
+                                        tempSp = 17f * previewScale,
+                                        condSp = 11.5f * previewScale,
                                         showDetails = true,
                                         primaryColor = primaryColor,
                                         secondaryColor = secondaryColor,
@@ -675,7 +672,7 @@ fun LiveWidgetGlassCard(
                                     ),
                                     style = buildGlassTextStyle(
                                         config = config,
-                                        fontSize = (11.2f * previewScale * config.textScale).sp,
+                                        fontSize = (11.8f * previewScale * config.textScale).sp,
                                         color = accentColor,
                                         shadowArgb = palette.shadowTextArgb,
                                         isHeader = false
@@ -691,7 +688,7 @@ fun LiveWidgetGlassCard(
                                         config = config,
                                         snapshot = snapshot,
                                         tier = tier,
-                                        textSp = 11.5f * previewScale * config.batteryScale,
+                                        textSp = 12.5f * previewScale * config.batteryScale,
                                         primaryColor = primaryColor,
                                         secondaryColor = secondaryColor,
                                         palettePrimaryArgb = palette.primaryTextArgb,
@@ -715,18 +712,18 @@ fun LiveWidgetGlassCard(
                         }
                     }
 
-                    // Lower 36%: 5-Day or 7-Day Solar & Lunar Calendar Strip
+                    // Lower 34%: 5-Day or 7-Day Solar & Lunar Calendar Strip
                     if (config.showWeekCalendarStrip) {
                         Box(
                             modifier = Modifier
-                                .weight(0.36f)
+                                .weight(0.34f)
                                 .fillMaxWidth(),
                             contentAlignment = Alignment.Center
                         ) {
                             PreviewWeekCalendarStrip(
                                 config = config,
                                 snapshot = snapshot,
-                                previewScale = previewScale * 1.05f,
+                                previewScale = previewScale,
                                 primaryColor = primaryColor,
                                 secondaryColor = secondaryColor,
                                 accentColor = accentColor,
@@ -759,7 +756,7 @@ fun LiveWidgetGlassCard(
                                 PreviewClockText(
                                     config = config,
                                     snapshot = snapshot,
-                                    baseSp = 44f * previewScale,
+                                    baseSp = 46f * previewScale,
                                     primaryColor = primaryColor,
                                     accentColor = accentColor,
                                     paletteShadowArgb = palette.shadowTextArgb,
@@ -773,8 +770,8 @@ fun LiveWidgetGlassCard(
                                 config = config,
                                 snapshot = snapshot,
                                 tier = tier,
-                                dateSp = 13.5f * previewScale,
-                                lunarSp = 11.8f * previewScale,
+                                dateSp = 14f * previewScale,
+                                lunarSp = 12f * previewScale,
                                 secondaryColor = secondaryColor,
                                 accentColor = accentColor,
                                 paletteShadowArgb = palette.shadowTextArgb,
@@ -795,9 +792,9 @@ fun LiveWidgetGlassCard(
                                 PreviewWeatherCluster(
                                     config = config,
                                     snapshot = snapshot,
-                                    iconSizeDp = (32 * previewScale).dp,
-                                    tempSp = 18f * previewScale,
-                                    condSp = 11.8f * previewScale,
+                                    iconSizeDp = (34 * previewScale).dp,
+                                    tempSp = 19f * previewScale,
+                                    condSp = 13f * previewScale,
                                     showDetails = true,
                                     primaryColor = primaryColor,
                                     secondaryColor = secondaryColor,
@@ -813,7 +810,7 @@ fun LiveWidgetGlassCard(
                                     config = config,
                                     snapshot = snapshot,
                                     tier = tier,
-                                    textSp = 12.5f * previewScale * config.batteryScale,
+                                    textSp = 13f * previewScale * config.batteryScale,
                                     primaryColor = primaryColor,
                                     secondaryColor = secondaryColor,
                                     palettePrimaryArgb = palette.primaryTextArgb,
@@ -848,7 +845,7 @@ fun LiveWidgetGlassCard(
                             PreviewWeekCalendarStrip(
                                 config = config,
                                 snapshot = snapshot,
-                                previewScale = previewScale * 1.08f,
+                                previewScale = previewScale,
                                 primaryColor = primaryColor,
                                 secondaryColor = secondaryColor,
                                 accentColor = accentColor,
@@ -1141,9 +1138,15 @@ private fun PreviewBatteryCluster(
 ) {
     val battery = snapshot.batteryInfo
     val (rawW, rawH) = when (config.batteryStyle) {
-        BatteryDisplayStyle.PILL -> 34.dp to 16.dp
-        BatteryDisplayStyle.CIRCLE -> 22.dp to 22.dp
-        BatteryDisplayStyle.PROGRESS_BAR -> 46.dp to 12.dp
+        BatteryDisplayStyle.PILL -> when (tier) {
+            WidgetSizeTier.COMPACT_2X2 -> 24.dp to 12.dp
+            WidgetSizeTier.ESSENTIAL_4X2 -> 28.dp to 13.dp
+            WidgetSizeTier.PREMIUM_4X3 -> 32.dp to 15.dp
+            WidgetSizeTier.DASHBOARD_4X4 -> 34.dp to 16.dp
+            else -> 28.dp to 13.dp
+        }
+        BatteryDisplayStyle.CIRCLE -> 20.dp to 20.dp
+        BatteryDisplayStyle.PROGRESS_BAR -> 42.dp to 12.dp
         BatteryDisplayStyle.ICON_NUMBER -> 16.dp to 18.dp
     }
     val gaugeW = (rawW.value * config.batteryScale).dp
@@ -1374,7 +1377,7 @@ private fun PreviewWeekCalendarStrip(
                     text = col.weekdayShortVi,
                     style = buildGlassTextStyle(
                         config = config,
-                        fontSize = (9.2f * previewScale * config.textScale * config.calendarStripScale).sp,
+                        fontSize = (9.5f * previewScale * config.textScale * config.calendarStripScale).sp,
                         color = if (col.isToday) primaryColor else secondaryColor,
                         shadowArgb = paletteShadowArgb,
                         isHeader = col.isToday
@@ -1385,7 +1388,7 @@ private fun PreviewWeekCalendarStrip(
                     text = col.solarDayString,
                     style = buildGlassTextStyle(
                         config = config,
-                        fontSize = ((if (col.isToday) 13.8f else 12.6f) * previewScale * config.textScale * config.calendarStripScale).sp,
+                        fontSize = ((if (col.isToday) 14.0f else 13.0f) * previewScale * config.textScale * config.calendarStripScale).sp,
                         color = primaryColor,
                         shadowArgb = paletteShadowArgb,
                         isHeader = true
@@ -1397,7 +1400,7 @@ private fun PreviewWeekCalendarStrip(
                         text = col.lunarDayMonthString,
                         style = buildGlassTextStyle(
                             config = config,
-                            fontSize = (8.8f * previewScale * config.textScale * config.calendarStripScale).sp,
+                            fontSize = ((if (col.isToday) 9.5f else 9.0f) * previewScale * config.textScale * config.calendarStripScale).sp,
                             color = if (col.isToday) accentColor else secondaryColor,
                             shadowArgb = paletteShadowArgb,
                             isHeader = col.isToday
