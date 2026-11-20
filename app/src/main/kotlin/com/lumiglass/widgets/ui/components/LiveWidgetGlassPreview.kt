@@ -465,10 +465,10 @@ fun LiveWidgetGlassCard(
                             .fillMaxWidth(),
                         verticalAlignment = Alignment.Top
                     ) {
-                        // Left 45%: Clock + Gregorian Date
+                        // Left 48%: Clock + Gregorian Date
                         Column(
                             modifier = Modifier
-                                .weight(0.45f)
+                                .weight(0.48f)
                                 .padding(end = 6.dp),
                             verticalArrangement = Arrangement.Top,
                             horizontalAlignment = Alignment.Start
@@ -478,7 +478,7 @@ fun LiveWidgetGlassCard(
                                     PreviewClockText(
                                         config = config,
                                         snapshot = snapshot,
-                                        baseSp = 36f * previewScale,
+                                        baseSp = 35f * previewScale,
                                         primaryColor = primaryColor,
                                         accentColor = accentColor,
                                         paletteShadowArgb = palette.shadowTextArgb,
@@ -505,11 +505,11 @@ fun LiveWidgetGlassCard(
                             }
                         }
 
-                        // Right 55%: Weather + Lunar + Battery
+                        // Right 52%: Weather + Lunar + Battery
                         Column(
                             modifier = Modifier
-                                .weight(0.55f)
-                                .padding(start = 8.dp),
+                                .weight(0.52f)
+                                .padding(start = 6.dp),
                             verticalArrangement = Arrangement.Top,
                             horizontalAlignment = Alignment.Start
                         ) {
@@ -605,8 +605,8 @@ fun LiveWidgetGlassCard(
                     ) {
                         Column(
                             modifier = Modifier
-                                .weight(0.46f)
-                                .padding(end = 8.dp),
+                                .weight(0.48f)
+                                .padding(end = 6.dp),
                             verticalArrangement = Arrangement.Center
                         ) {
                             if (config.showClock) {
@@ -614,7 +614,7 @@ fun LiveWidgetGlassCard(
                                     PreviewClockText(
                                         config = config,
                                         snapshot = snapshot,
-                                        baseSp = 42f * previewScale,
+                                        baseSp = 38f * previewScale,
                                         primaryColor = primaryColor,
                                         accentColor = accentColor,
                                         paletteShadowArgb = palette.shadowTextArgb,
@@ -643,8 +643,8 @@ fun LiveWidgetGlassCard(
 
                         Column(
                             modifier = Modifier
-                                .weight(0.54f)
-                                .padding(start = 10.dp),
+                                .weight(0.52f)
+                                .padding(start = 6.dp),
                             verticalArrangement = Arrangement.Center
                         ) {
                             if (config.showWeather) {
@@ -743,10 +743,10 @@ fun LiveWidgetGlassCard(
                             vertical = (12 * previewScale).dp
                         )
                 ) {
-                    // Zone 1 (36%): Clock + Date + Lunar
+                    // Zone 1 (34%): Clock + Date + Lunar
                     Column(
                         modifier = Modifier
-                            .weight(0.36f)
+                            .weight(0.34f)
                             .fillMaxWidth(),
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = horizontalAlign
@@ -756,7 +756,7 @@ fun LiveWidgetGlassCard(
                                 PreviewClockText(
                                     config = config,
                                     snapshot = snapshot,
-                                    baseSp = 46f * previewScale,
+                                    baseSp = 40f * previewScale,
                                     primaryColor = primaryColor,
                                     accentColor = accentColor,
                                     paletteShadowArgb = palette.shadowTextArgb,
@@ -770,8 +770,8 @@ fun LiveWidgetGlassCard(
                                 config = config,
                                 snapshot = snapshot,
                                 tier = tier,
-                                dateSp = 14f * previewScale,
-                                lunarSp = 12f * previewScale,
+                                dateSp = 13.5f * previewScale,
+                                lunarSp = 11.5f * previewScale,
                                 secondaryColor = secondaryColor,
                                 accentColor = accentColor,
                                 paletteShadowArgb = palette.shadowTextArgb,
@@ -890,7 +890,8 @@ private fun PreviewClockText(
                 isHeader = true
             ),
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            softWrap = false,
+            overflow = TextOverflow.Clip
         )
     } else if (horizontalSplit) {
         Row(verticalAlignment = Alignment.Bottom) {

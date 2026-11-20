@@ -282,7 +282,10 @@ private fun LumiGlassMainApp(
                     onDownloadAndInstallUpdate = { viewModel.downloadAndInstallAppUpdate() },
                     onInstallDownloadedApk = { viewModel.installAlreadyDownloadedApk() },
                     onUpdateGlobalSettings = viewModel::updateGlobalSettings,
-                    onSyncAllWidgetsNow = viewModel::syncAllWidgetsNow
+                    onSyncAllWidgetsNow = viewModel::syncAllWidgetsNow,
+                    onManualBackup = { viewModel.performManualBackup {} },
+                    onManualRestore = { viewModel.performRestoreFromBackup { _, _ -> } },
+                    lastBackupTime = viewModel.getLastBackupTimeFormatted()
                 )
             }
         }

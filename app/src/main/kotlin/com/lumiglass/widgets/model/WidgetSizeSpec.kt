@@ -79,7 +79,8 @@ object ResponsiveLayoutResolver {
 
     /**
      * Resolves the optimal layout tier and responsive scaling metrics based on actual launcher
-     * dimensions (in dp), preventing text clipping or module overlap on resize.
+     * dimensions (in dp), preserving the user's chosen layout tier while preventing text clipping
+     * or module overlap on resize.
      */
     fun resolve(
         widthDp: Int,
@@ -89,18 +90,55 @@ object ResponsiveLayoutResolver {
         val safeW = if (widthDp > 40) widthDp else preferredTier.defaultWidthDp
         val safeH = if (heightDp > 36) heightDp else preferredTier.defaultHeightDp
 
-        val tier = when {
-            safeH < 108 -> {
-                if (safeW < 235) WidgetSizeTier.MINI_2X1 else WidgetSizeTier.ESSENTIAL_4X2
+        val tier = when (preferredTier) {
+            WidgetSizeTier.MINI_2X1 -> {
+                if (safeW >= 240 && safeH >= 110) WidgetSizeTier.ESSENTIAL_4X2
+                else if (safeH >= 110) WidgetSizeTier.COMPACT_2X2
+                else WidgetSizeTier.MINI_2X1
             }
-            safeH < 192 -> {
-                if (safeW < 235) WidgetSizeTier.COMPACT_2X2 else WidgetSizeTier.ESSENTIAL_4X2
+            WidgetSizeTier.COMPACT_2X2 -> {
+                if (safeW < 210) {
+                    if (safeH < 100) WidgetSizeTier.MINI_2X1 else WidgetSizeTier.COMPACT_2X2
+                } else if (safeH >= 240) {
+                    WidgetSizeTier.PREMIUM_4X3
+                } else {
+                    WidgetSizeTier.ESSENTIAL_4X2
+                }
             }
-            safeH < 268 -> {
-                if (safeW < 235) WidgetSizeTier.COMPACT_2X2 else WidgetSizeTier.PREMIUM_4X3
+            WidgetSizeTier.ESSENTIAL_4X2 -> {
+                if (safeW < 210) {
+                    if (safeH < 100) WidgetSizeTier.MINI_2X1 else WidgetSizeTier.COMPACT_2X2
+                } else if (safeH < 100) {
+                    WidgetSizeTier.MINI_2X1
+                } else if (safeH >= 280) {
+                    WidgetSizeTier.DASHBOARD_4X4
+                } else if (safeH >= 220) {
+                    WidgetSizeTier.PREMIUM_4X3
+                } else {
+                    WidgetSizeTier.ESSENTIAL_4X2
+                }
             }
-            else -> {
-                if (safeW < 235) WidgetSizeTier.COMPACT_2X2 else WidgetSizeTier.DASHBOARD_4X4
+            WidgetSizeTier.PREMIUM_4X3 -> {
+                if (safeW < 210) {
+                    if (safeH < 100) WidgetSizeTier.MINI_2X1 else WidgetSizeTier.COMPACT_2X2
+                } else if (safeH < 120) {
+                    WidgetSizeTier.ESSENTIAL_4X2
+                } else if (safeH >= 340) {
+                    WidgetSizeTier.DASHBOARD_4X4
+                } else {
+                    WidgetSizeTier.PREMIUM_4X3
+                }
+            }
+            WidgetSizeTier.DASHBOARD_4X4 -> {
+                if (safeW < 210) {
+                    if (safeH < 100) WidgetSizeTier.MINI_2X1 else WidgetSizeTier.COMPACT_2X2
+                } else if (safeH < 125) {
+                    WidgetSizeTier.ESSENTIAL_4X2
+                } else if (safeH < 220) {
+                    WidgetSizeTier.PREMIUM_4X3
+                } else {
+                    WidgetSizeTier.DASHBOARD_4X4
+                }
             }
         }
 

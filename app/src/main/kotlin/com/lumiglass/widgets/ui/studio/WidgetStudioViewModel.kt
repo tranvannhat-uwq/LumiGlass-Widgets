@@ -9,6 +9,8 @@ import com.lumiglass.widgets.data.battery.BatteryRepository
 import com.lumiglass.widgets.data.config.AppGlobalSettings
 import com.lumiglass.widgets.data.config.WidgetConfigRepository
 import com.lumiglass.widgets.data.datetime.DateTimeRepository
+import com.lumiglass.widgets.data.ram.RamInfo
+import com.lumiglass.widgets.data.ram.RamRepository
 import com.lumiglass.widgets.data.update.AppUpdateManager
 import com.lumiglass.widgets.data.update.AppUpdateUiState
 import com.lumiglass.widgets.data.update.GitHubReleaseInfo
@@ -69,6 +71,9 @@ class WidgetStudioViewModel(application: Application) : AndroidViewModel(applica
     val isRefreshingWeather: StateFlow<Boolean> = _isRefreshingWeather.asStateFlow()
 
     private val _currentBattery = MutableStateFlow(BatteryInfo())
+    private val _currentRam = MutableStateFlow(RamRepository.readCurrentRam(appContext))
+    val currentRam: StateFlow<RamInfo> = _currentRam.asStateFlow()
+
     private val _clockTickMillis = MutableStateFlow(System.currentTimeMillis())
 
     private val _activeWidgets = MutableStateFlow<List<ActiveWidgetSummary>>(emptyList())
@@ -91,8 +96,9 @@ class WidgetStudioViewModel(application: Application) : AndroidViewModel(applica
         _activeConfig,
         _currentWeather,
         _currentBattery,
+        _currentRam,
         _clockTickMillis
-    ) { cfg, weather, battery, tickMillis ->
+    ) { cfg, weather, battery, ram, tickMillis ->
         val zdt = DateTimeRepository.nowZoned(cfg.timezoneMode, tickMillis)
         val clockFormatted = DateTimeRepository.formatPreviewClock(zdt, cfg)
         val gregorianText = DateTimeRepository.formatGregorianDate(
@@ -116,7 +122,8 @@ class WidgetStudioViewModel(application: Application) : AndroidViewModel(applica
             weatherInfo = weather,
             batteryInfo = if (cfg.batteryMonitoringEnabled) battery else BatteryInfo(),
             isSystemDarkTheme = isDark,
-            weekCalendarColumns = DateTimeRepository.buildWeekCalendarColumns(zdt)
+            weekCalendarColumns = DateTimeRepository.buildWeekCalendarColumns(zdt),
+            ramInfo = ram
         )
     }.stateIn(
         viewModelScope,
@@ -131,23 +138,29 @@ class WidgetStudioViewModel(application: Application) : AndroidViewModel(applica
                 _activeConfig.value = draft
             }
             refreshBatteryTelemetry()
+            refreshRamTelemetry()
             refreshActiveWidgetsList()
             fetchWeatherForCurrentConfig(forceNetwork = false)
             checkForAppUpdate(silent = true)
         }
 
-        // Real-time 1-second clock & periodic battery refresh while UI is active
+        // Real-time 1-second clock & periodic battery/RAM refresh while UI is active
         viewModelScope.launch {
             var tickCount = 0
             while (isActive) {
                 delay(1000L)
                 _clockTickMillis.value = System.currentTimeMillis()
                 tickCount++
-                if (tickCount % 10 == 0) {
+                if (tickCount % 5 == 0) {
                     refreshBatteryTelemetry()
+                    refreshRamTelemetry()
                 }
             }
         }
+    }
+
+    fun refreshRamTelemetry() {
+        _currentRam.value = RamRepository.readCurrentRam(appContext)
     }
 
     private fun createInitialSnapshot(): WidgetDataSnapshot {
@@ -169,7 +182,8 @@ class WidgetStudioViewModel(application: Application) : AndroidViewModel(applica
             weatherInfo = _currentWeather.value,
             batteryInfo = BatteryRepository.readCurrentBattery(appContext, true),
             isSystemDarkTheme = true,
-            weekCalendarColumns = DateTimeRepository.buildWeekCalendarColumns(zdt)
+            weekCalendarColumns = DateTimeRepository.buildWeekCalendarColumns(zdt),
+            ramInfo = RamRepository.readCurrentRam(appContext)
         )
     }
 
@@ -507,5 +521,33 @@ class WidgetStudioViewModel(application: Application) : AndroidViewModel(applica
                 _statusMessage.value = msg
             }
         }
+    }
+
+    fun performManualBackup(onDone: (String) -> Unit) {
+        viewModelScope.launch {
+            configRepo.saveStudioDraft(_activeConfig.value)
+            val msg = "Đã sao lưu an toàn toàn bộ cấu hình widget và preset cá nhân!"
+            _statusMessage.value = msg
+            onDone(msg)
+        }
+    }
+
+    fun performRestoreFromBackup(onDone: (Boolean, String) -> Unit) {
+        viewModelScope.launch {
+            configRepo.ensureInitializedAndRestored()
+            val draft = configRepo.getStudioDraft()
+            _activeConfig.value = draft
+            refreshActiveWidgetsList()
+            WidgetUpdateScheduler.updateAllActiveWidgets(appContext, forceWeatherNetwork = false)
+            val msg = "Đã khôi phục thành công cấu hình widget từ bản sao lưu dự phòng!"
+            _statusMessage.value = msg
+            onDone(true, msg)
+        }
+    }
+
+    fun getLastBackupTimeFormatted(): String {
+        val ts = configRepo.getLastBackupTimestamp() ?: return "Đã sao lưu gần đây"
+        val sdf = java.text.SimpleDateFormat("HH:mm:ss dd/MM/yyyy", java.util.Locale.getDefault())
+        return sdf.format(java.util.Date(ts))
     }
 }

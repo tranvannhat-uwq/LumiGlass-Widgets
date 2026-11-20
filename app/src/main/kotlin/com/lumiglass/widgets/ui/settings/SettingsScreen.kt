@@ -23,12 +23,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.BatteryChargingFull
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.InstallMobile
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.Button
@@ -68,6 +72,9 @@ fun SettingsScreen(
     onInstallDownloadedApk: () -> Unit,
     onUpdateGlobalSettings: ((AppGlobalSettings) -> AppGlobalSettings) -> Unit,
     onSyncAllWidgetsNow: () -> Unit,
+    onManualBackup: () -> Unit = {},
+    onManualRestore: () -> Unit = {},
+    lastBackupTime: String = "",
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -329,7 +336,79 @@ fun SettingsScreen(
             }
         }
 
-        // 2. App Appearance (Light / Dark / System)
+        // 2. Multi-tier Data Protection & Backup / Restore
+        SettingsCard(
+            icon = Icons.Default.Security,
+            title = "Bảo vệ & Sao lưu cấu hình Widget"
+        ) {
+            Text(
+                text = "Hệ thống tự động sao lưu đa tầng (Multi-tier Persistent Backup) đã được kích hoạt. Toàn bộ cấu hình màu kính, độ trong suốt, vị trí và preset cá nhân được bảo vệ an toàn qua các bản cập nhật.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Trạng thái sao lưu: $lastBackupTime",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Button(
+                    onClick = onManualBackup,
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 44.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Backup,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Sao lưu ngay")
+                }
+
+                FilledTonalButton(
+                    onClick = onManualRestore,
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 44.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Restore,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Khôi phục")
+                }
+            }
+        }
+
+        // 3. App Appearance (Light / Dark / System)
         SettingsCard(
             icon = Icons.Default.Palette,
             title = "Giao diện ứng dụng LumiGlass"
