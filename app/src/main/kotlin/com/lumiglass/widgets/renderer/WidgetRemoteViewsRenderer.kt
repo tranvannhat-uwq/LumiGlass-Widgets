@@ -19,6 +19,7 @@ import com.lumiglass.widgets.R
 import com.lumiglass.widgets.model.ContentAlignmentOption
 import com.lumiglass.widgets.model.FontWeightOption
 import com.lumiglass.widgets.model.ResponsiveLayoutResolver
+import com.lumiglass.widgets.model.TelemetryDisplayStyle
 import com.lumiglass.widgets.model.TemperatureSymbolStyle
 import com.lumiglass.widgets.model.TimezoneMode
 import com.lumiglass.widgets.model.WeatherDisplayStyle
@@ -170,7 +171,17 @@ object WidgetRemoteViewsRenderer {
             secondaryTextArgb = palette.secondaryTextArgb
         )
 
-        // 6c. Configure Bottom 5-Day / 7-Day Solar & Lunar Calendar Strip (for 4x2, 4x3, 4x4)
+        // 6c. Configure Trio Glass Telemetry Cards (Pin + Bộ nhớ + RAM)
+        bindTelemetryTrioViews(
+            context = context,
+            views = views,
+            tier = tier,
+            density = density,
+            config = config,
+            snapshot = snapshot
+        )
+
+        // 6d. Configure Bottom 5-Day / 7-Day Solar & Lunar Calendar Strip (for 4x2, 4x3, 4x4)
         bindWeekCalendarStripViews(
             views = views,
             tier = tier,
@@ -542,6 +553,14 @@ object WidgetRemoteViewsRenderer {
         primaryTextArgb: Int,
         secondaryTextArgb: Int
     ) {
+        val isTrioActive = config.telemetryDisplayStyle == TelemetryDisplayStyle.TRIO_GLASS_CARDS &&
+            (tier == WidgetSizeTier.ESSENTIAL_4X2 || tier == WidgetSizeTier.PREMIUM_4X3 || tier == WidgetSizeTier.DASHBOARD_4X4)
+
+        if (isTrioActive) {
+            views.setViewVisibility(R.id.widget_battery_container, View.GONE)
+            return
+        }
+
         val showAnyBattery = config.batteryMonitoringEnabled &&
             (config.showBatteryPercent || config.showBatteryTemp)
 
@@ -628,6 +647,14 @@ object WidgetRemoteViewsRenderer {
         primaryTextArgb: Int,
         secondaryTextArgb: Int
     ) {
+        val isTrioActive = config.telemetryDisplayStyle == TelemetryDisplayStyle.TRIO_GLASS_CARDS &&
+            (tier == WidgetSizeTier.ESSENTIAL_4X2 || tier == WidgetSizeTier.PREMIUM_4X3 || tier == WidgetSizeTier.DASHBOARD_4X4)
+
+        if (isTrioActive) {
+            views.setViewVisibility(R.id.widget_ram_container, View.GONE)
+            return
+        }
+
         val showRam = config.showRamStatus && (tier == WidgetSizeTier.PREMIUM_4X3 || tier == WidgetSizeTier.DASHBOARD_4X4)
         if (!showRam) {
             views.setViewVisibility(R.id.widget_ram_container, View.GONE)
@@ -651,6 +678,100 @@ object WidgetRemoteViewsRenderer {
         views.setTextViewText(R.id.widget_ram_text, applyTypographySpans(text, config, isHeader = false))
         views.setTextViewTextSize(R.id.widget_ram_text, TypedValue.COMPLEX_UNIT_SP, ramSp)
         views.setTextColor(R.id.widget_ram_text, secondaryTextArgb)
+    }
+
+    private fun bindTelemetryTrioViews(
+        context: Context,
+        views: RemoteViews,
+        tier: WidgetSizeTier,
+        density: Float,
+        config: WidgetConfig,
+        snapshot: WidgetDataSnapshot
+    ) {
+        val isEligibleTier = tier == WidgetSizeTier.ESSENTIAL_4X2 ||
+            tier == WidgetSizeTier.PREMIUM_4X3 ||
+            tier == WidgetSizeTier.DASHBOARD_4X4
+
+        val showTrio = isEligibleTier && config.telemetryDisplayStyle == TelemetryDisplayStyle.TRIO_GLASS_CARDS
+
+        if (!showTrio) {
+            views.setViewVisibility(R.id.widget_telemetry_trio_row, View.GONE)
+            return
+        }
+
+        views.setViewVisibility(R.id.widget_telemetry_trio_row, View.VISIBLE)
+
+        val cardHeightDp = when (tier) {
+            WidgetSizeTier.PREMIUM_4X3 -> 76
+            WidgetSizeTier.DASHBOARD_4X4 -> 80
+            else -> 70
+        }
+
+        // 1. Battery Card
+        if (config.showBatteryCard && config.batteryMonitoringEnabled) {
+            views.setViewVisibility(R.id.widget_card_battery, View.VISIBLE)
+            val bBmp = GlassIconRenderer.renderBatteryTrioCardBitmap(
+                battery = snapshot.batteryInfo,
+                config = config,
+                density = density,
+                targetWidthDp = 68,
+                targetHeightDp = cardHeightDp
+            )
+            views.setImageViewBitmap(R.id.widget_card_battery, bBmp)
+
+            val bIntent = Intent(Intent.ACTION_POWER_USAGE_SUMMARY)
+            val bPending = PendingIntent.getActivity(
+                context, 101, bIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            views.setOnClickPendingIntent(R.id.widget_card_battery, bPending)
+        } else {
+            views.setViewVisibility(R.id.widget_card_battery, View.GONE)
+        }
+
+        // 2. Internal Storage Card (Bộ nhớ trong)
+        if (config.showStorageCard) {
+            views.setViewVisibility(R.id.widget_card_storage, View.VISIBLE)
+            val sBmp = GlassIconRenderer.renderStorageTrioCardBitmap(
+                storage = snapshot.storageInfo,
+                config = config,
+                density = density,
+                targetWidthDp = 68,
+                targetHeightDp = cardHeightDp
+            )
+            views.setImageViewBitmap(R.id.widget_card_storage, sBmp)
+
+            val sIntent = Intent(android.provider.Settings.ACTION_INTERNAL_STORAGE_SETTINGS)
+            val sPending = PendingIntent.getActivity(
+                context, 102, sIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            views.setOnClickPendingIntent(R.id.widget_card_storage, sPending)
+        } else {
+            views.setViewVisibility(R.id.widget_card_storage, View.GONE)
+        }
+
+        // 3. RAM Card
+        if (config.showRamCard && config.showRamStatus) {
+            views.setViewVisibility(R.id.widget_card_ram, View.VISIBLE)
+            val rBmp = GlassIconRenderer.renderRamTrioCardBitmap(
+                ram = snapshot.ramInfo,
+                config = config,
+                density = density,
+                targetWidthDp = 68,
+                targetHeightDp = cardHeightDp
+            )
+            views.setImageViewBitmap(R.id.widget_card_ram, rBmp)
+
+            val rIntent = Intent(android.provider.Settings.ACTION_DEVICE_INFO_SETTINGS)
+            val rPending = PendingIntent.getActivity(
+                context, 103, rIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            views.setOnClickPendingIntent(R.id.widget_card_ram, rPending)
+        } else {
+            views.setViewVisibility(R.id.widget_card_ram, View.GONE)
+        }
     }
 
     private data class CalendarColViewIds(

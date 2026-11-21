@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -45,6 +46,7 @@ import com.lumiglass.widgets.model.BatteryDisplayStyle
 import com.lumiglass.widgets.model.ClockFontStyle
 import com.lumiglass.widgets.model.ContentAlignmentOption
 import com.lumiglass.widgets.model.FontWeightOption
+import com.lumiglass.widgets.model.TelemetryDisplayStyle
 import com.lumiglass.widgets.model.TemperatureSymbolStyle
 import com.lumiglass.widgets.model.WeatherDisplayStyle
 import com.lumiglass.widgets.model.WidgetConfig
@@ -550,18 +552,28 @@ fun LiveWidgetGlassCard(
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                             }
-                            if (config.batteryMonitoringEnabled && (config.showBatteryPercent || config.showBatteryTemp)) {
-                                Box(modifier = Modifier.offset(y = config.batteryOffsetY.dp)) {
-                                    PreviewBatteryCluster(
-                                        config = config,
-                                        snapshot = snapshot,
-                                        tier = tier,
-                                        textSp = 11.0f * previewScale,
-                                        primaryColor = primaryColor,
-                                        secondaryColor = secondaryColor,
-                                        palettePrimaryArgb = palette.primaryTextArgb,
-                                        paletteShadowArgb = palette.shadowTextArgb
-                                    )
+                            if (config.telemetryDisplayStyle == TelemetryDisplayStyle.TRIO_GLASS_CARDS) {
+                                Spacer(modifier = Modifier.height(3.dp))
+                                PreviewTelemetryTrioCluster(
+                                    config = config,
+                                    snapshot = snapshot,
+                                    tier = tier,
+                                    previewScale = previewScale
+                                )
+                            } else {
+                                if (config.batteryMonitoringEnabled && (config.showBatteryPercent || config.showBatteryTemp)) {
+                                    Box(modifier = Modifier.offset(y = config.batteryOffsetY.dp)) {
+                                        PreviewBatteryCluster(
+                                            config = config,
+                                            snapshot = snapshot,
+                                            tier = tier,
+                                            textSp = 11.0f * previewScale,
+                                            primaryColor = primaryColor,
+                                            secondaryColor = secondaryColor,
+                                            palettePrimaryArgb = palette.primaryTextArgb,
+                                            paletteShadowArgb = palette.shadowTextArgb
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -684,31 +696,41 @@ fun LiveWidgetGlassCard(
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                             }
-                            if (config.batteryMonitoringEnabled && (config.showBatteryPercent || config.showBatteryTemp)) {
-                                Box(modifier = Modifier.offset(y = config.batteryOffsetY.dp)) {
-                                    PreviewBatteryCluster(
-                                        config = config,
-                                        snapshot = snapshot,
-                                        tier = tier,
-                                        textSp = 12.5f * previewScale * config.batteryScale,
-                                        primaryColor = primaryColor,
-                                        secondaryColor = secondaryColor,
-                                        palettePrimaryArgb = palette.primaryTextArgb,
-                                        paletteShadowArgb = palette.shadowTextArgb
-                                    )
+                            if (config.telemetryDisplayStyle == TelemetryDisplayStyle.TRIO_GLASS_CARDS) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                PreviewTelemetryTrioCluster(
+                                    config = config,
+                                    snapshot = snapshot,
+                                    tier = tier,
+                                    previewScale = previewScale
+                                )
+                            } else {
+                                if (config.batteryMonitoringEnabled && (config.showBatteryPercent || config.showBatteryTemp)) {
+                                    Box(modifier = Modifier.offset(y = config.batteryOffsetY.dp)) {
+                                        PreviewBatteryCluster(
+                                            config = config,
+                                            snapshot = snapshot,
+                                            tier = tier,
+                                            textSp = 12.5f * previewScale * config.batteryScale,
+                                            primaryColor = primaryColor,
+                                            secondaryColor = secondaryColor,
+                                            palettePrimaryArgb = palette.primaryTextArgb,
+                                            paletteShadowArgb = palette.shadowTextArgb
+                                        )
+                                    }
                                 }
-                            }
-                            if (config.showRamStatus) {
-                                Spacer(modifier = Modifier.height(3.dp))
-                                Box(modifier = Modifier.offset(y = config.ramOffsetY.dp)) {
-                                    PreviewRamCluster(
-                                        config = config,
-                                        snapshot = snapshot,
-                                        tier = tier,
-                                        previewScale = previewScale,
-                                        secondaryColor = secondaryColor,
-                                        palette = palette
-                                    )
+                                if (config.showRamStatus) {
+                                    Spacer(modifier = Modifier.height(3.dp))
+                                    Box(modifier = Modifier.offset(y = config.ramOffsetY.dp)) {
+                                        PreviewRamCluster(
+                                            config = config,
+                                            snapshot = snapshot,
+                                            tier = tier,
+                                            previewScale = previewScale,
+                                            secondaryColor = secondaryColor,
+                                            palette = palette
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -805,33 +827,43 @@ fun LiveWidgetGlassCard(
                                 )
                             }
                         }
-                        if (config.batteryMonitoringEnabled && (config.showBatteryPercent || config.showBatteryTemp)) {
+                        if (config.telemetryDisplayStyle == TelemetryDisplayStyle.TRIO_GLASS_CARDS) {
                             Spacer(modifier = Modifier.height(5.dp))
-                            Box(modifier = Modifier.offset(y = config.batteryOffsetY.dp)) {
-                                PreviewBatteryCluster(
-                                    config = config,
-                                    snapshot = snapshot,
-                                    tier = tier,
-                                    textSp = 13f * previewScale * config.batteryScale,
-                                    primaryColor = primaryColor,
-                                    secondaryColor = secondaryColor,
-                                    palettePrimaryArgb = palette.primaryTextArgb,
-                                    paletteShadowArgb = palette.shadowTextArgb,
-                                    expandFullRow = true
-                                )
+                            PreviewTelemetryTrioCluster(
+                                config = config,
+                                snapshot = snapshot,
+                                tier = tier,
+                                previewScale = previewScale
+                            )
+                        } else {
+                            if (config.batteryMonitoringEnabled && (config.showBatteryPercent || config.showBatteryTemp)) {
+                                Spacer(modifier = Modifier.height(5.dp))
+                                Box(modifier = Modifier.offset(y = config.batteryOffsetY.dp)) {
+                                    PreviewBatteryCluster(
+                                        config = config,
+                                        snapshot = snapshot,
+                                        tier = tier,
+                                        textSp = 13f * previewScale * config.batteryScale,
+                                        primaryColor = primaryColor,
+                                        secondaryColor = secondaryColor,
+                                        palettePrimaryArgb = palette.primaryTextArgb,
+                                        paletteShadowArgb = palette.shadowTextArgb,
+                                        expandFullRow = true
+                                    )
+                                }
                             }
-                        }
-                        if (config.showRamStatus) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Box(modifier = Modifier.offset(y = config.ramOffsetY.dp)) {
-                                PreviewRamCluster(
-                                    config = config,
-                                    snapshot = snapshot,
-                                    tier = tier,
-                                    previewScale = previewScale,
-                                    secondaryColor = secondaryColor,
-                                    palette = palette
-                                )
+                            if (config.showRamStatus) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Box(modifier = Modifier.offset(y = config.ramOffsetY.dp)) {
+                                    PreviewRamCluster(
+                                        config = config,
+                                        snapshot = snapshot,
+                                        tier = tier,
+                                        previewScale = previewScale,
+                                        secondaryColor = secondaryColor,
+                                        palette = palette
+                                    )
+                                }
                             }
                         }
                     }
@@ -1267,6 +1299,89 @@ private fun PreviewWeatherCluster(
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PreviewTelemetryTrioCluster(
+    config: WidgetConfig,
+    snapshot: WidgetDataSnapshot,
+    tier: WidgetSizeTier,
+    previewScale: Float,
+    modifier: Modifier = Modifier
+) {
+    val density = LocalDensity.current.density
+    val cardHeight = when (tier) {
+        WidgetSizeTier.PREMIUM_4X3 -> (76 * previewScale).dp
+        WidgetSizeTier.DASHBOARD_4X4 -> (80 * previewScale).dp
+        else -> (70 * previewScale).dp
+    }
+
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (config.showBatteryCard && config.batteryMonitoringEnabled) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(cardHeight)
+            ) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    drawIntoCanvas { c ->
+                        GlassIconRenderer.drawBatteryTrioCard(
+                            canvas = c.nativeCanvas,
+                            w = size.width,
+                            h = size.height,
+                            battery = snapshot.batteryInfo,
+                            config = config,
+                            density = density
+                        )
+                    }
+                }
+            }
+        }
+        if (config.showStorageCard) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(cardHeight)
+            ) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    drawIntoCanvas { c ->
+                        GlassIconRenderer.drawStorageTrioCard(
+                            canvas = c.nativeCanvas,
+                            w = size.width,
+                            h = size.height,
+                            storage = snapshot.storageInfo,
+                            config = config,
+                            density = density
+                        )
+                    }
+                }
+            }
+        }
+        if (config.showRamCard && config.showRamStatus) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(cardHeight)
+            ) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    drawIntoCanvas { c ->
+                        GlassIconRenderer.drawRamTrioCard(
+                            canvas = c.nativeCanvas,
+                            w = size.width,
+                            h = size.height,
+                            ram = snapshot.ramInfo,
+                            config = config,
+                            density = density
+                        )
                     }
                 }
             }

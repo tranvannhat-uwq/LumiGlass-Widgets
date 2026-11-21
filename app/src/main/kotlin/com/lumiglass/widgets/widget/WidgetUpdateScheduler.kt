@@ -129,6 +129,7 @@ object WidgetUpdateScheduler {
         )
 
         val ramInfo = com.lumiglass.widgets.data.ram.RamRepository.readCurrentRam(context)
+        val storageInfo = com.lumiglass.widgets.data.storage.StorageRepository.readCurrentStorage()
 
         val uiMode = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
         val isSystemDark = uiMode == Configuration.UI_MODE_NIGHT_YES
@@ -145,7 +146,8 @@ object WidgetUpdateScheduler {
             batteryInfo = batteryInfo,
             isSystemDarkTheme = isSystemDark,
             weekCalendarColumns = DateTimeRepository.buildWeekCalendarColumns(zdt),
-            ramInfo = ramInfo
+            ramInfo = ramInfo,
+            storageInfo = storageInfo
         )
     }
 

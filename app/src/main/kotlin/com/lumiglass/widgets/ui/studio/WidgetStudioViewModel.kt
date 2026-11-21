@@ -73,6 +73,8 @@ class WidgetStudioViewModel(application: Application) : AndroidViewModel(applica
     private val _currentBattery = MutableStateFlow(BatteryInfo())
     private val _currentRam = MutableStateFlow(RamRepository.readCurrentRam(appContext))
     val currentRam: StateFlow<RamInfo> = _currentRam.asStateFlow()
+    private val _currentStorage = MutableStateFlow(com.lumiglass.widgets.data.storage.StorageRepository.readCurrentStorage())
+    val currentStorage: StateFlow<com.lumiglass.widgets.data.storage.StorageInfo> = _currentStorage.asStateFlow()
 
     private val _clockTickMillis = MutableStateFlow(System.currentTimeMillis())
 
@@ -123,7 +125,8 @@ class WidgetStudioViewModel(application: Application) : AndroidViewModel(applica
             batteryInfo = if (cfg.batteryMonitoringEnabled) battery else BatteryInfo(),
             isSystemDarkTheme = isDark,
             weekCalendarColumns = DateTimeRepository.buildWeekCalendarColumns(zdt),
-            ramInfo = ram
+            ramInfo = ram,
+            storageInfo = _currentStorage.value
         )
     }.stateIn(
         viewModelScope,
@@ -139,12 +142,13 @@ class WidgetStudioViewModel(application: Application) : AndroidViewModel(applica
             }
             refreshBatteryTelemetry()
             refreshRamTelemetry()
+            refreshStorageTelemetry()
             refreshActiveWidgetsList()
             fetchWeatherForCurrentConfig(forceNetwork = false)
             checkForAppUpdate(silent = true)
         }
 
-        // Real-time 1-second clock & periodic battery/RAM refresh while UI is active
+        // Real-time 1-second clock & periodic battery/RAM/storage refresh while UI is active
         viewModelScope.launch {
             var tickCount = 0
             while (isActive) {
@@ -154,6 +158,7 @@ class WidgetStudioViewModel(application: Application) : AndroidViewModel(applica
                 if (tickCount % 5 == 0) {
                     refreshBatteryTelemetry()
                     refreshRamTelemetry()
+                    refreshStorageTelemetry()
                 }
             }
         }
@@ -161,6 +166,10 @@ class WidgetStudioViewModel(application: Application) : AndroidViewModel(applica
 
     fun refreshRamTelemetry() {
         _currentRam.value = RamRepository.readCurrentRam(appContext)
+    }
+
+    fun refreshStorageTelemetry() {
+        _currentStorage.value = com.lumiglass.widgets.data.storage.StorageRepository.readCurrentStorage()
     }
 
     private fun createInitialSnapshot(): WidgetDataSnapshot {
@@ -183,7 +192,8 @@ class WidgetStudioViewModel(application: Application) : AndroidViewModel(applica
             batteryInfo = BatteryRepository.readCurrentBattery(appContext, true),
             isSystemDarkTheme = true,
             weekCalendarColumns = DateTimeRepository.buildWeekCalendarColumns(zdt),
-            ramInfo = RamRepository.readCurrentRam(appContext)
+            ramInfo = RamRepository.readCurrentRam(appContext),
+            storageInfo = com.lumiglass.widgets.data.storage.StorageRepository.readCurrentStorage()
         )
     }
 

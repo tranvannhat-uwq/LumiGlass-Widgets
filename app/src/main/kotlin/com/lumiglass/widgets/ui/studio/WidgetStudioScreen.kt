@@ -86,6 +86,9 @@ import com.lumiglass.widgets.model.FontWeightOption
 import com.lumiglass.widgets.model.GlassIconStyle
 import com.lumiglass.widgets.model.GlassPreset
 import com.lumiglass.widgets.model.GlassThemeMode
+import com.lumiglass.widgets.model.RamDisplayStyle
+import com.lumiglass.widgets.model.StorageDisplayStyle
+import com.lumiglass.widgets.model.TelemetryDisplayStyle
 import com.lumiglass.widgets.model.TemperatureSymbolStyle
 import com.lumiglass.widgets.model.TemperatureUnit
 import com.lumiglass.widgets.model.TimezoneMode
@@ -654,6 +657,7 @@ private fun ContentTabContent(
                 WidgetModuleType.WEATHER -> config.showWeather
                 WidgetModuleType.BATTERY_PERCENT -> config.showBatteryPercent
                 WidgetModuleType.BATTERY_TEMP -> config.showBatteryTemp
+                WidgetModuleType.INTERNAL_STORAGE -> config.showStorageCard
                 WidgetModuleType.RAM_STATUS -> config.showRamStatus
             }
 
@@ -701,6 +705,7 @@ private fun ContentTabContent(
                                         WidgetModuleType.WEATHER -> cfg.copy(showWeather = checked)
                                         WidgetModuleType.BATTERY_PERCENT -> cfg.copy(showBatteryPercent = checked)
                                         WidgetModuleType.BATTERY_TEMP -> cfg.copy(showBatteryTemp = checked)
+                                        WidgetModuleType.INTERNAL_STORAGE -> cfg.copy(showStorageCard = checked)
                                         WidgetModuleType.RAM_STATUS -> cfg.copy(showRamStatus = checked)
                                     }
                                 }
@@ -927,7 +932,54 @@ private fun ContentTabContent(
         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
         // Battery % and Battery Temp Options
-        StudioSectionTitle("E & F. Kiểu hiển thị Pin & Cảnh báo nhiệt độ pin")
+        StudioSectionTitle("E. Kiểu hiển thị hệ thống (Telemetry: Pin, Bộ nhớ, RAM)")
+        Text(
+            text = "Chọn giao diện hiển thị cho các thẻ phần cứng (Pin, Bộ nhớ trong, RAM) như ảnh mẫu:",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            TelemetryDisplayStyle.entries.forEach { tStyle ->
+                FilterChip(
+                    selected = config.telemetryDisplayStyle == tStyle,
+                    onClick = { onUpdateConfig { it.copy(telemetryDisplayStyle = tStyle) } },
+                    label = { Text(tStyle.labelVi) },
+                    modifier = Modifier.heightIn(min = 48.dp)
+                )
+            }
+        }
+
+        StudioSwitchRow(
+            title = "Màu sắc cảnh báo thông minh (Pin thấp, Nhiệt độ cao, Bộ nhớ & RAM đầy)",
+            checked = config.dynamicAlertColors,
+            onCheckedChange = { v -> onUpdateConfig { it.copy(dynamicAlertColors = v) } }
+        )
+
+        if (config.telemetryDisplayStyle == TelemetryDisplayStyle.TRIO_GLASS_CARDS) {
+            StudioSwitchRow(
+                title = "Hiển thị thẻ Pin (kèm vòng đo & nhiệt độ pin)",
+                checked = config.showBatteryCard,
+                onCheckedChange = { v -> onUpdateConfig { it.copy(showBatteryCard = v) } }
+            )
+            StudioSwitchRow(
+                title = "Hiển thị thẻ Bộ nhớ trong (Storage: dung lượng & % dùng)",
+                checked = config.showStorageCard,
+                onCheckedChange = { v -> onUpdateConfig { it.copy(showStorageCard = v) } }
+            )
+            StudioSwitchRow(
+                title = "Hiển thị thẻ RAM (mức tải RAM thực tế)",
+                checked = config.showRamCard,
+                onCheckedChange = { v -> onUpdateConfig { it.copy(showRamCard = v) } }
+            )
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+        // F. Chi tiết Pin & Kiểu đo
+        StudioSectionTitle("F. Kiểu đo Pin & Cảnh báo nhiệt độ")
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -942,22 +994,61 @@ private fun ContentTabContent(
             }
         }
         StudioSwitchRow(
-            title = "Tự động đổi màu theo mức % pin",
+            title = "Tự động đổi màu theo mức % pin (Xanh lá > 50%, Vàng 21-50%, Đỏ ≤ 20%)",
             checked = config.colorBatteryByLevel,
             onCheckedChange = { v -> onUpdateConfig { it.copy(colorBatteryByLevel = v) } }
         )
         StudioSwitchRow(
-            title = "Cảnh báo màu khi nhiệt độ pin ấm/nóng (≥ 38°C)",
+            title = "Cảnh báo màu khi pin ấm/nóng (Cam ≥ 35°C, Đỏ ≥ 40°C)",
             checked = config.warnBatteryTempByColor,
             onCheckedChange = { v -> onUpdateConfig { it.copy(warnBatteryTempByColor = v) } }
         )
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
-        // RAM status
-        StudioSectionTitle("G. Trạng thái RAM thực tế")
+        // G. Bộ nhớ trong & RAM
+        StudioSectionTitle("G. Tùy chỉnh chi tiết Bộ nhớ trong & RAM")
+        Text(
+            text = "Định dạng hiển thị chi tiết Bộ nhớ trong:",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            StorageDisplayStyle.entries.forEach { sStyle ->
+                FilterChip(
+                    selected = config.storageDisplayStyle == sStyle,
+                    onClick = { onUpdateConfig { it.copy(storageDisplayStyle = sStyle) } },
+                    label = { Text(sStyle.labelVi) },
+                    modifier = Modifier.heightIn(min = 48.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = "Định dạng hiển thị chi tiết RAM:",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            RamDisplayStyle.entries.forEach { rStyle ->
+                FilterChip(
+                    selected = config.ramDisplayStyle == rStyle,
+                    onClick = { onUpdateConfig { it.copy(ramDisplayStyle = rStyle) } },
+                    label = { Text(rStyle.labelVi) },
+                    modifier = Modifier.heightIn(min = 48.dp)
+                )
+            }
+        }
+
         StudioSwitchRow(
-            title = "Hiển thị thông tin RAM thực tế (Dung lượng & % đang dùng)",
+            title = "Bật đo lường RAM thực tế trong hệ thống",
             checked = config.showRamStatus,
             onCheckedChange = { v -> onUpdateConfig { it.copy(showRamStatus = v) } }
         )

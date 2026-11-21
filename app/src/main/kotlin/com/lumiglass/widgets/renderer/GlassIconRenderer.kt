@@ -7,13 +7,19 @@ import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RadialGradient
+import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Shader
+import android.graphics.Typeface
 import androidx.core.graphics.ColorUtils
+import com.lumiglass.widgets.data.ram.RamInfo
+import com.lumiglass.widgets.data.storage.StorageInfo
 import com.lumiglass.widgets.model.BatteryDisplayStyle
 import com.lumiglass.widgets.model.BatteryInfo
 import com.lumiglass.widgets.model.GlassIconStyle
+import com.lumiglass.widgets.model.TemperatureUnit
 import com.lumiglass.widgets.model.WeatherConditionCategory
+import com.lumiglass.widgets.model.WidgetConfig
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -564,10 +570,10 @@ object GlassIconRenderer {
             return fallbackArgb
         }
         return when {
-            isCharging -> Color.parseColor("#34D399")
-            levelPercent <= 20 -> Color.parseColor("#F87171")
-            levelPercent <= 45 -> Color.parseColor("#FBBF24")
-            else -> Color.parseColor("#34D399")
+            isCharging -> 0xFF00E5FF.toInt() // Electric Cyan charging
+            levelPercent <= 20 -> 0xFFEF4444.toInt() // Danger Red (low battery)
+            levelPercent <= 50 -> 0xFFF59E0B.toInt() // Amber Warning
+            else -> 0xFF22C55E.toInt() // Neon Green
         }
     }
 
@@ -581,9 +587,470 @@ object GlassIconRenderer {
     ): Int {
         if (!warnByColor || tempCelsius == null) return fallbackArgb
         return when {
-            tempCelsius >= 42.0f -> Color.parseColor("#F87171") // Hot warning (Coral Red)
-            tempCelsius >= 38.0f -> Color.parseColor("#FBBF24") // Warm caution (Amber)
-            else -> fallbackArgb
+            tempCelsius >= 40.0f -> 0xFFEF4444.toInt() // Hot warning / Overheat (Red)
+            tempCelsius >= 35.0f -> 0xFFF97316.toInt() // Warm caution (Amber/Orange)
+            else -> 0xFF38BDF8.toInt() // Cool Ice Blue
         }
+    }
+
+    /**
+     * Resolves color for Internal Storage (Bộ nhớ) display based on usage threshold.
+     */
+    fun resolveStorageColorArgb(
+        usedPercent: Int,
+        warnByColor: Boolean,
+        fallbackArgb: Int = 0xFFC084FC.toInt()
+    ): Int {
+        if (!warnByColor || usedPercent !in 0..100) return fallbackArgb
+        return when {
+            usedPercent >= 90 -> 0xFFEF4444.toInt() // Danger: storage almost full
+            usedPercent >= 75 -> 0xFFF59E0B.toInt() // Warning: storage high
+            else -> 0xFFC084FC.toInt() // Neon Purple/Violet
+        }
+    }
+
+    /**
+     * Resolves color for RAM status based on memory pressure.
+     */
+    fun resolveRamColorArgb(
+        usedPercent: Int,
+        warnByColor: Boolean,
+        fallbackArgb: Int = 0xFF00E5FF.toInt()
+    ): Int {
+        if (!warnByColor || usedPercent !in 0..100) return fallbackArgb
+        return when {
+            usedPercent >= 85 -> 0xFFEF4444.toInt() // Danger: RAM overloaded
+            usedPercent >= 70 -> 0xFFF59E0B.toInt() // Warning: RAM high
+            else -> 0xFF00E5FF.toInt() // Electric Cyan
+        }
+    }
+
+    // =========================================================================
+    // TRIO GLASS TELEMETRY CARDS (PIN + BỘ NHỚ + RAM)
+    // =========================================================================
+
+    fun renderBatteryTrioCardBitmap(
+        battery: BatteryInfo,
+        config: WidgetConfig,
+        density: Float,
+        targetWidthDp: Int = 68,
+        targetHeightDp: Int = 78
+    ): Bitmap {
+        val pxW = (targetWidthDp * density.coerceIn(1.5f, 3.0f)).toInt().coerceAtLeast(100)
+        val pxH = (targetHeightDp * density.coerceIn(1.5f, 3.0f)).toInt().coerceAtLeast(120)
+        val bitmap = Bitmap.createBitmap(pxW, pxH, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        drawBatteryTrioCard(canvas, pxW.toFloat(), pxH.toFloat(), battery, config, density)
+        return bitmap
+    }
+
+    fun renderStorageTrioCardBitmap(
+        storage: StorageInfo,
+        config: WidgetConfig,
+        density: Float,
+        targetWidthDp: Int = 68,
+        targetHeightDp: Int = 78
+    ): Bitmap {
+        val pxW = (targetWidthDp * density.coerceIn(1.5f, 3.0f)).toInt().coerceAtLeast(100)
+        val pxH = (targetHeightDp * density.coerceIn(1.5f, 3.0f)).toInt().coerceAtLeast(120)
+        val bitmap = Bitmap.createBitmap(pxW, pxH, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        drawStorageTrioCard(canvas, pxW.toFloat(), pxH.toFloat(), storage, config, density)
+        return bitmap
+    }
+
+    fun renderRamTrioCardBitmap(
+        ram: RamInfo,
+        config: WidgetConfig,
+        density: Float,
+        targetWidthDp: Int = 68,
+        targetHeightDp: Int = 78
+    ): Bitmap {
+        val pxW = (targetWidthDp * density.coerceIn(1.5f, 3.0f)).toInt().coerceAtLeast(100)
+        val pxH = (targetHeightDp * density.coerceIn(1.5f, 3.0f)).toInt().coerceAtLeast(120)
+        val bitmap = Bitmap.createBitmap(pxW, pxH, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        drawRamTrioCard(canvas, pxW.toFloat(), pxH.toFloat(), ram, config, density)
+        return bitmap
+    }
+
+    private fun drawCardGlassBackground(
+        canvas: Canvas,
+        w: Float,
+        h: Float,
+        accentColor: Int,
+        density: Float
+    ) {
+        val strokeW = 1.3f * density
+        val corner = 13.5f * density
+        val cardRect = RectF(strokeW, strokeW, w - strokeW, h - strokeW)
+
+        // 1. Dark Obsidian Glass Base
+        val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+            color = Color.argb(190, 15, 23, 42) // #0F172A dark obsidian
+        }
+        canvas.drawRoundRect(cardRect, corner, corner, bgPaint)
+
+        // 2. Bottom Ambient Neon Glow
+        val glowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+            shader = LinearGradient(
+                w * 0.5f, h * 0.45f, w * 0.5f, h - strokeW,
+                Color.TRANSPARENT,
+                ColorUtils.setAlphaComponent(accentColor, 55),
+                Shader.TileMode.CLAMP
+            )
+        }
+        canvas.drawRoundRect(cardRect, corner, corner, glowPaint)
+
+        // 3. Specular Glass Rim Border
+        val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            this.strokeWidth = strokeW
+            shader = LinearGradient(
+                cardRect.left, cardRect.top, cardRect.right, cardRect.bottom,
+                ColorUtils.setAlphaComponent(accentColor, 180),
+                ColorUtils.setAlphaComponent(accentColor, 75),
+                Shader.TileMode.CLAMP
+            )
+        }
+        canvas.drawRoundRect(cardRect, corner, corner, borderPaint)
+    }
+
+    fun drawBatteryTrioCard(
+        canvas: Canvas,
+        w: Float,
+        h: Float,
+        battery: BatteryInfo,
+        config: WidgetConfig,
+        density: Float
+    ) {
+        val accentColor = resolveBatteryLevelColorArgb(
+            levelPercent = battery.levelPercent,
+            isCharging = battery.isCharging,
+            colorByLevel = config.dynamicAlertColors,
+            fallbackArgb = Color.parseColor("#22C55E")
+        )
+        val tempColor = resolveBatteryTempColorArgb(
+            tempCelsius = battery.temperatureCelsius,
+            warnByColor = config.dynamicAlertColors,
+            fallbackArgb = Color.parseColor("#38BDF8")
+        )
+
+        drawCardGlassBackground(canvas, w, h, accentColor, density)
+
+        val cx = w * 0.5f
+        val pct = battery.levelPercent.coerceIn(0, 100)
+        val levelFraction = if (battery.hasLevelData) pct / 100f else 0.5f
+
+        // Top Battery Icon
+        val iconW = 16f * density
+        val iconH = 8.5f * density
+        val iconTop = h * 0.10f
+        val iconRect = RectF(cx - iconW * 0.5f, iconTop, cx + iconW * 0.5f, iconTop + iconH)
+        val iconCorner = iconH * 0.35f
+
+        val iconFillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+            color = accentColor
+        }
+        canvas.drawRoundRect(iconRect, iconCorner, iconCorner, iconFillPaint)
+
+        // Terminal tip
+        val tipRect = RectF(iconRect.right + 0.8f * density, iconRect.centerY() - iconH * 0.22f, iconRect.right + 2.2f * density, iconRect.centerY() + iconH * 0.22f)
+        canvas.drawRoundRect(tipRect, 0.8f * density, 0.8f * density, iconFillPaint)
+
+        // Bolt inside battery icon
+        val boltPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+            color = Color.WHITE
+        }
+        val boltPath = Path().apply {
+            moveTo(cx + 0.5f * density, iconRect.top + 1.2f * density)
+            lineTo(cx - 2.5f * density, iconRect.centerY() + 0.5f * density)
+            lineTo(cx - 0.2f * density, iconRect.centerY() + 0.5f * density)
+            lineTo(cx - 0.5f * density, iconRect.bottom - 1.2f * density)
+            lineTo(cx + 2.5f * density, iconRect.centerY() - 0.5f * density)
+            lineTo(cx + 0.2f * density, iconRect.centerY() - 0.5f * density)
+            close()
+        }
+        canvas.drawPath(boltPath, boltPaint)
+
+        // Circular Arc Gauge wrapping percentage
+        val arcCenterY = h * 0.42f
+        val arcRadius = w * 0.27f
+        val arcRect = RectF(cx - arcRadius, arcCenterY - arcRadius, cx + arcRadius, arcCenterY + arcRadius)
+        val arcStrokeW = 2.2f * density
+
+        val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = arcStrokeW
+            strokeCap = Paint.Cap.ROUND
+            color = ColorUtils.setAlphaComponent(accentColor, 40)
+        }
+        canvas.drawArc(arcRect, 135f, 270f, false, trackPaint)
+
+        val progressPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = arcStrokeW
+            strokeCap = Paint.Cap.ROUND
+            color = accentColor
+        }
+        canvas.drawArc(arcRect, 135f, 270f * levelFraction, false, progressPaint)
+
+        // Percentage Text inside Arc
+        val pctPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            textAlign = Paint.Align.CENTER
+            textSize = 12.5f * density
+            color = Color.WHITE
+            typeface = Typeface.create("sans-serif-rounded", Typeface.BOLD)
+            setShadowLayer(4f * density, 0f, 1f * density, Color.argb(160, 0, 0, 0))
+        }
+        canvas.drawText("$pct%", cx, arcCenterY + 4f * density, pctPaint)
+
+        // "Pin" Label under percentage
+        val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            textAlign = Paint.Align.CENTER
+            textSize = 7.5f * density
+            color = Color.parseColor("#E2E8F0")
+            typeface = Typeface.create("sans-serif", Typeface.NORMAL)
+        }
+        canvas.drawText("Pin", cx, arcCenterY + arcRadius + 9f * density, labelPaint)
+
+        // Bottom Thermometer Chip: "🌡 29.6°C"
+        val chipW = w * 0.80f
+        val chipH = 13.5f * density
+        val chipTop = h * 0.79f
+        val chipRect = RectF(cx - chipW * 0.5f, chipTop, cx + chipW * 0.5f, chipTop + chipH)
+        val chipCorner = chipH * 0.48f
+
+        val chipBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+            color = Color.argb(160, 10, 15, 26)
+        }
+        canvas.drawRoundRect(chipRect, chipCorner, chipCorner, chipBgPaint)
+
+        val chipBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = 0.8f * density
+            color = ColorUtils.setAlphaComponent(tempColor, 100)
+        }
+        canvas.drawRoundRect(chipRect, chipCorner, chipCorner, chipBorderPaint)
+
+        val tempText = "🌡 " + battery.formatTemperature(config.temperatureUnit)
+        val chipTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            textAlign = Paint.Align.CENTER
+            textSize = 7.8f * density
+            color = tempColor
+            typeface = Typeface.create("sans-serif-rounded", Typeface.BOLD)
+        }
+        canvas.drawText(tempText, cx, chipRect.centerY() + 2.8f * density, chipTextPaint)
+    }
+
+    fun drawStorageTrioCard(
+        canvas: Canvas,
+        w: Float,
+        h: Float,
+        storage: StorageInfo,
+        config: WidgetConfig,
+        density: Float
+    ) {
+        val accentColor = resolveStorageColorArgb(
+            usedPercent = storage.usedPercent,
+            warnByColor = config.dynamicAlertColors,
+            fallbackArgb = Color.parseColor("#C084FC")
+        )
+
+        drawCardGlassBackground(canvas, w, h, accentColor, density)
+
+        val cx = w * 0.5f
+        val pct = storage.usedPercent.coerceIn(0, 100)
+        val levelFraction = pct / 100f
+
+        // Top Database Cylinder Icon
+        val diskPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = 1.3f * density
+            color = Color.WHITE
+        }
+        val diskFill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+            color = ColorUtils.setAlphaComponent(accentColor, 160)
+        }
+
+        val diskTop = h * 0.10f
+        val diskW = 16f * density
+        val diskH = 4.5f * density
+
+        // Top disk
+        val topOval = RectF(cx - diskW * 0.5f, diskTop, cx + diskW * 0.5f, diskTop + diskH)
+        canvas.drawOval(topOval, diskFill)
+        canvas.drawOval(topOval, diskPaint)
+
+        // Bottom disk curve
+        val botOval = RectF(cx - diskW * 0.5f, diskTop + 4.5f * density, cx + diskW * 0.5f, diskTop + diskH + 4.5f * density)
+        canvas.drawArc(botOval, 0f, 180f, false, diskPaint)
+
+        // Label: "Bộ nhớ"
+        val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            textAlign = Paint.Align.CENTER
+            textSize = 8.5f * density
+            color = Color.parseColor("#E2E8F0")
+            typeface = Typeface.create("sans-serif", Typeface.NORMAL)
+        }
+        canvas.drawText("Bộ nhớ", cx, h * 0.35f, labelPaint)
+
+        // Main Percentage: "68%"
+        val pctPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            textAlign = Paint.Align.CENTER
+            textSize = 14f * density
+            color = Color.WHITE
+            typeface = Typeface.create("sans-serif-rounded", Typeface.BOLD)
+            setShadowLayer(4f * density, 0f, 1f * density, Color.argb(160, 0, 0, 0))
+        }
+        canvas.drawText("$pct%", cx, h * 0.54f, pctPaint)
+
+        // Horizontal Glowing Progress Bar
+        val barW = w * 0.78f
+        val barH = 4f * density
+        val barY = h * 0.65f
+        val barRect = RectF(cx - barW * 0.5f, barY - barH * 0.5f, cx + barW * 0.5f, barY + barH * 0.5f)
+        val barCorner = barH * 0.5f
+
+        val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+            color = ColorUtils.setAlphaComponent(accentColor, 45)
+        }
+        canvas.drawRoundRect(barRect, barCorner, barCorner, trackPaint)
+
+        val fillW = (barW * levelFraction).coerceAtLeast(barH)
+        val fillRect = RectF(barRect.left, barRect.top, (barRect.left + fillW).coerceAtMost(barRect.right), barRect.bottom)
+        val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+            shader = LinearGradient(
+                fillRect.left, fillRect.centerY(), fillRect.right, fillRect.centerY(),
+                ColorUtils.blendARGB(accentColor, Color.WHITE, 0.25f),
+                accentColor,
+                Shader.TileMode.CLAMP
+            )
+        }
+        canvas.drawRoundRect(fillRect, barCorner, barCorner, fillPaint)
+
+        // Bottom Detail: "74.2 / 108 GB"
+        val detailPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            textAlign = Paint.Align.CENTER
+            textSize = 7.5f * density
+            color = Color.parseColor("#CBD5E1")
+            typeface = Typeface.create("sans-serif", Typeface.NORMAL)
+        }
+        val detailText = storage.formatUsedAndTotalGb()
+        canvas.drawText(detailText, cx, h * 0.85f, detailPaint)
+    }
+
+    fun drawRamTrioCard(
+        canvas: Canvas,
+        w: Float,
+        h: Float,
+        ram: RamInfo,
+        config: WidgetConfig,
+        density: Float
+    ) {
+        val accentColor = resolveRamColorArgb(
+            usedPercent = ram.usedPercent,
+            warnByColor = config.dynamicAlertColors,
+            fallbackArgb = Color.parseColor("#00E5FF")
+        )
+
+        drawCardGlassBackground(canvas, w, h, accentColor, density)
+
+        val cx = w * 0.5f
+        val pct = ram.usedPercent.coerceIn(0, 100)
+        val levelFraction = pct / 100f
+
+        // Top RAM Microchip Icon
+        val chipPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = 1.3f * density
+            color = Color.WHITE
+        }
+        val chipFill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+            color = ColorUtils.setAlphaComponent(accentColor, 150)
+        }
+
+        val iconTop = h * 0.10f
+        val chipW = 17f * density
+        val chipH = 9f * density
+        val chipRect = RectF(cx - chipW * 0.5f, iconTop, cx + chipW * 0.5f, iconTop + chipH)
+        val chipCorner = 1.8f * density
+        canvas.drawRoundRect(chipRect, chipCorner, chipCorner, chipFill)
+        canvas.drawRoundRect(chipRect, chipCorner, chipCorner, chipPaint)
+
+        // 3 internal modules inside RAM chip
+        val modPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = 0.9f * density
+            color = Color.WHITE
+        }
+        val mPad = 2.4f * density
+        canvas.drawRect(RectF(chipRect.left + mPad, chipRect.top + 1.8f * density, chipRect.left + mPad + 2.5f * density, chipRect.bottom - 1.8f * density), modPaint)
+        canvas.drawRect(RectF(cx - 1.25f * density, chipRect.top + 1.8f * density, cx + 1.25f * density, chipRect.bottom - 1.8f * density), modPaint)
+        canvas.drawRect(RectF(chipRect.right - mPad - 2.5f * density, chipRect.top + 1.8f * density, chipRect.right - mPad, chipRect.bottom - 1.8f * density), modPaint)
+
+        // Label: "RAM"
+        val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            textAlign = Paint.Align.CENTER
+            textSize = 8.5f * density
+            color = Color.parseColor("#E2E8F0")
+            typeface = Typeface.create("sans-serif", Typeface.NORMAL)
+        }
+        canvas.drawText("RAM", cx, h * 0.35f, labelPaint)
+
+        // Main Percentage: "72%"
+        val pctPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            textAlign = Paint.Align.CENTER
+            textSize = 14f * density
+            color = Color.WHITE
+            typeface = Typeface.create("sans-serif-rounded", Typeface.BOLD)
+            setShadowLayer(4f * density, 0f, 1f * density, Color.argb(160, 0, 0, 0))
+        }
+        canvas.drawText("$pct%", cx, h * 0.54f, pctPaint)
+
+        // Sub Detail: "8.0 / 11.0G"
+        val detailPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            textAlign = Paint.Align.CENTER
+            textSize = 7.5f * density
+            color = Color.parseColor("#CBD5E1")
+            typeface = Typeface.create("sans-serif", Typeface.NORMAL)
+        }
+        val detailText = "${ram.formatUsedGb()} / ${ram.formatTotalGb()}G"
+        canvas.drawText(detailText, cx, h * 0.70f, detailPaint)
+
+        // Horizontal Glowing Progress Bar at bottom
+        val barW = w * 0.78f
+        val barH = 4f * density
+        val barY = h * 0.84f
+        val barRect = RectF(cx - barW * 0.5f, barY - barH * 0.5f, cx + barW * 0.5f, barY + barH * 0.5f)
+        val barCorner = barH * 0.5f
+
+        val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+            color = ColorUtils.setAlphaComponent(accentColor, 45)
+        }
+        canvas.drawRoundRect(barRect, barCorner, barCorner, trackPaint)
+
+        val fillW = (barW * levelFraction).coerceAtLeast(barH)
+        val fillRect = RectF(barRect.left, barRect.top, (barRect.left + fillW).coerceAtMost(barRect.right), barRect.bottom)
+        val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+            shader = LinearGradient(
+                fillRect.left, fillRect.centerY(), fillRect.right, fillRect.centerY(),
+                ColorUtils.blendARGB(accentColor, Color.WHITE, 0.25f),
+                accentColor,
+                Shader.TileMode.CLAMP
+            )
+        }
+        canvas.drawRoundRect(fillRect, barCorner, barCorner, fillPaint)
     }
 }

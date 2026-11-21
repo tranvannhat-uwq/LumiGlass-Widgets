@@ -27,6 +27,36 @@ enum class BatteryDisplayStyle(val labelVi: String) {
 }
 
 @Serializable
+enum class TelemetryDisplayStyle(val labelVi: String, val descriptionVi: String) {
+    TRIO_GLASS_CARDS(
+        "Bộ 3 thẻ kính Neon (Pin, Bộ nhớ, RAM)",
+        "3 thẻ kính độc lập cho Pin (kèm nhiệt độ), Bộ nhớ trong và RAM với vòng đo và thanh tiến trình phát sáng"
+    ),
+    COMPACT_ROW(
+        "Dải ngang viên thuốc kính (Pills)",
+        "Dạng thanh ngang compact tiết kiệm diện tích"
+    ),
+    MINIMAL_TEXT(
+        "Tối giản văn bản",
+        "Chỉ hiển thị số liệu dạng chữ thanh mảnh"
+    )
+}
+
+@Serializable
+enum class StorageDisplayStyle(val labelVi: String) {
+    PERCENT_AND_DETAIL("Phần trăm & Dung lượng (68% • 74.2/108GB)"),
+    PERCENT_ONLY("Chỉ phần trăm (68%)"),
+    DETAIL_ONLY("Chỉ dung lượng (74.2 / 108 GB)")
+}
+
+@Serializable
+enum class RamDisplayStyle(val labelVi: String) {
+    PERCENT_AND_DETAIL("Phần trăm & Dung lượng (72% • 8.0/11.0G)"),
+    PERCENT_ONLY("Chỉ phần trăm (72%)"),
+    DETAIL_ONLY("Chỉ dung lượng (8.0 / 11.0G)")
+}
+
+@Serializable
 enum class WidgetModuleType(val labelVi: String) {
     CLOCK("Đồng hồ kỹ thuật số"),
     GREGORIAN_DATE("Thứ, ngày, tháng, năm"),
@@ -34,6 +64,7 @@ enum class WidgetModuleType(val labelVi: String) {
     WEATHER("Thời tiết"),
     BATTERY_PERCENT("Phần trăm pin"),
     BATTERY_TEMP("Nhiệt độ pin"),
+    INTERNAL_STORAGE("Bộ nhớ trong (Storage)"),
     RAM_STATUS("Tình trạng RAM")
 }
 
@@ -142,12 +173,17 @@ data class WidgetConfig(
     val showBatteryPercent: Boolean = true,
     val showBatteryTemp: Boolean = false,
     val showRamStatus: Boolean = true,
+    val showStorageStatus: Boolean = true,
+    val showBatteryCard: Boolean = true,
+    val showStorageCard: Boolean = true,
+    val showRamCard: Boolean = true,
 
     // 2b. Tùy chỉnh sâu từng thành phần riêng biệt (Kích thước & Vị trí riêng)
     val clockScale: Float = 1.0f,
     val dateScale: Float = 1.0f,
     val weatherScale: Float = 1.0f,
     val batteryScale: Float = 1.0f,
+    val storageScale: Float = 1.0f,
     val ramScale: Float = 1.0f,
     val calendarStripScale: Float = 1.0f,
 
@@ -155,12 +191,14 @@ data class WidgetConfig(
     val dateAlignment: ContentAlignmentOption = ContentAlignmentOption.START,
     val weatherAlignment: ContentAlignmentOption = ContentAlignmentOption.START,
     val batteryAlignment: ContentAlignmentOption = ContentAlignmentOption.START,
+    val storageAlignment: ContentAlignmentOption = ContentAlignmentOption.START,
     val ramAlignment: ContentAlignmentOption = ContentAlignmentOption.START,
 
     val clockOffsetY: Int = 0,
     val dateOffsetY: Int = 0,
     val weatherOffsetY: Int = 0,
     val batteryOffsetY: Int = 0,
+    val storageOffsetY: Int = 0,
     val ramOffsetY: Int = 0,
 
     val use24HourFormat: Boolean = true,
@@ -189,6 +227,10 @@ data class WidgetConfig(
     val batteryStyle: BatteryDisplayStyle = BatteryDisplayStyle.PILL,
     val colorBatteryByLevel: Boolean = true,
     val warnBatteryTempByColor: Boolean = true,
+    val telemetryDisplayStyle: TelemetryDisplayStyle = TelemetryDisplayStyle.TRIO_GLASS_CARDS,
+    val dynamicAlertColors: Boolean = true,
+    val storageDisplayStyle: StorageDisplayStyle = StorageDisplayStyle.PERCENT_AND_DETAIL,
+    val ramDisplayStyle: RamDisplayStyle = RamDisplayStyle.PERCENT_AND_DETAIL,
 
     val moduleOrder: List<WidgetModuleType> = listOf(
         WidgetModuleType.CLOCK,
@@ -197,6 +239,7 @@ data class WidgetConfig(
         WidgetModuleType.WEATHER,
         WidgetModuleType.BATTERY_PERCENT,
         WidgetModuleType.BATTERY_TEMP,
+        WidgetModuleType.INTERNAL_STORAGE,
         WidgetModuleType.RAM_STATUS
     ),
     val layoutVariant: WidgetLayoutVariant = WidgetLayoutVariant.BALANCED_AUTO,

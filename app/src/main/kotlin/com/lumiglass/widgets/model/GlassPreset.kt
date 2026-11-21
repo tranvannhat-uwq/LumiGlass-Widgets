@@ -216,13 +216,56 @@ object OfficialGlassPresets {
         )
     )
 
+    val NEON_CYBER_OBSIDIAN = GlassPreset(
+        id = "neon_cyber_obsidian",
+        codeNumber = "07",
+        name = "Neon Cyber Obsidian",
+        subtitleVi = "Obsidian đen neon đa sắc (như ảnh)",
+        descriptionVi = "Bề mặt kính obsidian tối sâu, viền neon xanh lam phát sáng, bộ 3 thẻ kính Pin (vòng đo & nhiệt độ), Bộ nhớ trong (Storage) và RAM với thanh đo phát sáng và màu cảnh báo thông minh.",
+        categoryTag = "Sắc màu",
+        defaultConfig = WidgetConfig(
+            presetId = "neon_cyber_obsidian",
+            presetName = "Neon Cyber Obsidian",
+            glassTintColorHex = 0xFF0B132BL,
+            glassSecondaryTintHex = 0xFF1C2541L,
+            borderColorHex = 0xFF38BDF8L,
+            glassOpacity = 0.58f,
+            frostAmount = 0.52f,
+            borderLuminance = 0.92f,
+            cornerRadiusDp = 30f,
+            shadowIntensity = 0.65f,
+            highlightIntensity = 0.88f,
+            refractionIntensity = 0.78f,
+            themeMode = GlassThemeMode.DARK,
+            fontStyle = ClockFontStyle.ROUNDED_GEOMETRIC,
+            fontWeight = FontWeightOption.BOLD,
+            autoTextColor = false,
+            customTextColorHex = 0xFFFFFFFFL,
+            textGlowEnabled = true,
+            textShadowEnabled = true,
+            iconStyle = GlassIconStyle.GLASS,
+            weatherDisplayStyle = WeatherDisplayStyle.MAGIC_CARD,
+            temperatureSymbolStyle = TemperatureSymbolStyle.DEGREE_ONLY,
+            showWeatherCardBackground = true,
+            telemetryDisplayStyle = TelemetryDisplayStyle.TRIO_GLASS_CARDS,
+            dynamicAlertColors = true,
+            showBatteryCard = true,
+            showStorageCard = true,
+            showRamCard = true,
+            showBatteryPercent = true,
+            showBatteryTemp = true,
+            showRamStatus = true
+        )
+    )
+
     val ALL: List<GlassPreset> = listOf(
         CRYSTAL_CLEAR,
         AURORA_GLASS,
         MIDNIGHT_GLASS,
         FROSTED_PEARL,
         ADAPTIVE_GLASS,
-        AMBER_SUNSET_GLASS
+        AMBER_SUNSET_GLASS,
+        NEON_CYBER_OBSIDIAN
     )
 
     fun findById(id: String): GlassPreset {

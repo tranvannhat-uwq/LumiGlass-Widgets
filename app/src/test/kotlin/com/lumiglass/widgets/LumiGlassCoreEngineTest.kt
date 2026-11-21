@@ -13,6 +13,7 @@ import com.lumiglass.widgets.model.TemperatureUnit
 import com.lumiglass.widgets.model.WeatherInfo
 import com.lumiglass.widgets.model.WidgetConfig
 import com.lumiglass.widgets.model.WidgetSizeTier
+import com.lumiglass.widgets.renderer.GlassIconRenderer
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
@@ -243,5 +244,105 @@ class LumiGlassCoreEngineTest {
         assertEquals("1.1.0", release.versionName)
         assertEquals("LumiGlass-Widgets-v1.1.0.apk", release.apkFileName)
         assertEquals("17.91 MB", release.formatFileSizeMb())
+    }
+
+    @Test
+    fun testStorageInfoFormatting() {
+        val total = 108L * 1024L * 1024L * 1024L
+        val used = (74.2 * 1024.0 * 1024.0 * 1024.0).toLong()
+        val storage = com.lumiglass.widgets.data.storage.StorageInfo(
+            totalBytes = total,
+            availBytes = total - used,
+            usedBytes = used,
+            usedPercent = 68
+        )
+
+        assertEquals("74.2", storage.formatUsedGb())
+        assertEquals("108", storage.formatTotalGb())
+        assertEquals("74.2 / 108 GB", storage.formatUsedAndTotalGb())
+        assertEquals("68%", storage.formatPercent())
+    }
+
+    @Test
+    fun testTelemetryAlertColorsResolution() {
+        // Battery
+        val chargingColor = GlassIconRenderer.resolveBatteryLevelColorArgb(
+            levelPercent = 92,
+            isCharging = true,
+            colorByLevel = true,
+            fallbackArgb = 0xFFFFFFFF.toInt()
+        )
+        val lowBatteryColor = GlassIconRenderer.resolveBatteryLevelColorArgb(
+            levelPercent = 15,
+            isCharging = false,
+            colorByLevel = true,
+            fallbackArgb = 0xFFFFFFFF.toInt()
+        )
+        val normalBatteryColor = GlassIconRenderer.resolveBatteryLevelColorArgb(
+            levelPercent = 80,
+            isCharging = false,
+            colorByLevel = true,
+            fallbackArgb = 0xFFFFFFFF.toInt()
+        )
+
+        assertEquals(0xFF00E5FF.toInt(), chargingColor)
+        assertEquals(0xFFEF4444.toInt(), lowBatteryColor)
+        assertEquals(0xFF22C55E.toInt(), normalBatteryColor)
+
+        // Battery Temp
+        val hotTempColor = GlassIconRenderer.resolveBatteryTempColorArgb(
+            tempCelsius = 41.5f,
+            warnByColor = true,
+            fallbackArgb = 0xFFFFFFFF.toInt()
+        )
+        val warmTempColor = GlassIconRenderer.resolveBatteryTempColorArgb(
+            tempCelsius = 37.0f,
+            warnByColor = true,
+            fallbackArgb = 0xFFFFFFFF.toInt()
+        )
+        val coolTempColor = GlassIconRenderer.resolveBatteryTempColorArgb(
+            tempCelsius = 29.6f,
+            warnByColor = true,
+            fallbackArgb = 0xFFFFFFFF.toInt()
+        )
+
+        assertEquals(0xFFEF4444.toInt(), hotTempColor)
+        assertEquals(0xFFF97316.toInt(), warmTempColor)
+        assertEquals(0xFF38BDF8.toInt(), coolTempColor)
+
+        // Storage
+        val fullStorageColor = GlassIconRenderer.resolveStorageColorArgb(
+            usedPercent = 94,
+            warnByColor = true
+        )
+        val normalStorageColor = GlassIconRenderer.resolveStorageColorArgb(
+            usedPercent = 68,
+            warnByColor = true
+        )
+        assertEquals(0xFFEF4444.toInt(), fullStorageColor)
+        assertEquals(0xFFC084FC.toInt(), normalStorageColor)
+
+        // RAM
+        val highRamColor = GlassIconRenderer.resolveRamColorArgb(
+            usedPercent = 88,
+            warnByColor = true
+        )
+        val normalRamColor = GlassIconRenderer.resolveRamColorArgb(
+            usedPercent = 72,
+            warnByColor = true
+        )
+        assertEquals(0xFFEF4444.toInt(), highRamColor)
+        assertEquals(0xFFF59E0B.toInt(), normalRamColor)
+    }
+
+    @Test
+    fun testNeonCyberObsidianPresetPresence() {
+        val preset = OfficialGlassPresets.findById("neon_cyber_obsidian")
+        assertEquals("neon_cyber_obsidian", preset.id)
+        assertEquals("07", preset.codeNumber)
+        assertEquals(com.lumiglass.widgets.model.TelemetryDisplayStyle.TRIO_GLASS_CARDS, preset.defaultConfig.telemetryDisplayStyle)
+        assertTrue(preset.defaultConfig.showStorageCard)
+        assertTrue(preset.defaultConfig.showBatteryCard)
+        assertTrue(preset.defaultConfig.showRamCard)
     }
 }
