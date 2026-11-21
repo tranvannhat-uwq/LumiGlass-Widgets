@@ -147,12 +147,17 @@ class LumiGlassCoreEngineTest {
         assertEquals(72, parsed.humidityPercent)
         assertEquals(15, parsed.rainProbabilityPercent)
         assertEquals("26°C", parsed.formatTemp(parsed.currentTempC, TemperatureUnit.CELSIUS))
+        assertEquals("26°", parsed.formatTemp(parsed.currentTempC, TemperatureUnit.CELSIUS, degreeOnly = true))
+        assertEquals("21°–29°", parsed.formatRangeCompact(TemperatureUnit.CELSIUS, degreeOnly = true))
+        assertEquals("21°–29° • Mưa 15%", parsed.formatRangeAndPrecip(TemperatureUnit.CELSIUS, degreeOnly = true))
         assertEquals("Có mây rải rác", parsed.conditionTextVi)
 
         // When no data is available (API failure with no cache), must display "--°C"
         val emptyWeather = WeatherInfo(hasData = false, currentTempC = null)
         assertFalse(emptyWeather.hasData)
         assertEquals("--°C", emptyWeather.formatTemp(emptyWeather.currentTempC, TemperatureUnit.CELSIUS))
+        assertEquals("--°", emptyWeather.formatTemp(emptyWeather.currentTempC, TemperatureUnit.CELSIUS, degreeOnly = true))
+        assertEquals("--°–--°", emptyWeather.formatRangeCompact(TemperatureUnit.CELSIUS, degreeOnly = true))
     }
 
     @Test

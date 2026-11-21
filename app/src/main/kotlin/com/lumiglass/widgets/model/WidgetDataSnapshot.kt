@@ -68,18 +68,38 @@ data class WeatherInfo(
     val isFromOfflineCache: Boolean = false,
     val errorMessageVi: String? = null
 ) {
-    fun formatTemp(tempC: Double?, unit: TemperatureUnit): String {
-        if (tempC == null) return "--${unit.symbol}"
+    fun formatTemp(tempC: Double?, unit: TemperatureUnit, degreeOnly: Boolean = false): String {
+        if (tempC == null) return if (degreeOnly) "--°" else "--${unit.symbol}"
         val value = when (unit) {
             TemperatureUnit.CELSIUS -> tempC
             TemperatureUnit.FAHRENHEIT -> tempC * 9.0 / 5.0 + 32.0
         }
-        return "${Math.round(value)}${unit.symbol}"
+        val sym = if (degreeOnly) "°" else unit.symbol
+        return "${Math.round(value)}$sym"
     }
 
-    fun formatHighLow(unit: TemperatureUnit): String {
+    fun formatHighLow(unit: TemperatureUnit, degreeOnly: Boolean = false): String {
         if (highTempC == null || lowTempC == null) return "C:-- • T:--"
-        return "C:${formatTemp(highTempC, unit)} • T:${formatTemp(lowTempC, unit)}"
+        return "C:${formatTemp(highTempC, unit, degreeOnly)} • T:${formatTemp(lowTempC, unit, degreeOnly)}"
+    }
+
+    fun formatRangeCompact(unit: TemperatureUnit, degreeOnly: Boolean = true): String {
+        if (highTempC == null || lowTempC == null) return "--°–--°"
+        val low = formatTemp(lowTempC, unit, degreeOnly)
+        val high = formatTemp(highTempC, unit, degreeOnly)
+        return "$low–$high"
+    }
+
+    fun formatRangeAndPrecip(unit: TemperatureUnit, degreeOnly: Boolean = true): String {
+        val range = formatRangeCompact(unit, degreeOnly)
+        val rain = rainProbabilityPercent
+        val humidity = humidityPercent
+        return when {
+            rain != null -> "$range • Mưa $rain%"
+            humidity != null -> "$range • Ẩm $humidity%"
+            feelsLikeC != null -> "$range • Cảm giác ${formatTemp(feelsLikeC, unit, degreeOnly)}"
+            else -> range
+        }
     }
 
     fun conditionCategory(): WeatherConditionCategory {

@@ -167,7 +167,7 @@ object OfficialGlassPresets {
             highlightIntensity = 0.68f,
             refractionIntensity = 0.62f,
             themeMode = GlassThemeMode.AUTO,
-            fontStyle = ClockFontStyle.MODERN_SANS,
+            fontStyle = ClockFontStyle.ROUNDED_GEOMETRIC,
             fontWeight = FontWeightOption.MEDIUM,
             autoTextColor = true,
             customTextColorHex = 0xFFFFFFFFL,
@@ -178,12 +178,51 @@ object OfficialGlassPresets {
         )
     )
 
+    val AMBER_SUNSET_GLASS = GlassPreset(
+        id = "amber_sunset_glass",
+        codeNumber = "06",
+        name = "Amber Sunset Glass",
+        subtitleVi = "Kính hổ phách hoàng hôn (Honor/Magic)",
+        descriptionVi = "Sắc cam ấm hổ phách sang trọng, font bo tròn hình học hiện đại, thẻ kính thời tiết MagicOS với trạng thái to rõ và dải nhiệt tinh tế.",
+        categoryTag = "Sắc màu",
+        defaultConfig = WidgetConfig(
+            presetId = "amber_sunset_glass",
+            presetName = "Amber Sunset Glass",
+            glassTintColorHex = 0xFFC2410CL,
+            glassSecondaryTintHex = 0xFFD97706L,
+            borderColorHex = 0xFFFDE68AL,
+            glassOpacity = 0.36f,
+            frostAmount = 0.45f,
+            borderLuminance = 0.86f,
+            cornerRadiusDp = 28f,
+            shadowIntensity = 0.48f,
+            highlightIntensity = 0.80f,
+            refractionIntensity = 0.72f,
+            themeMode = GlassThemeMode.DARK,
+            fontStyle = ClockFontStyle.ROUNDED_GEOMETRIC,
+            fontWeight = FontWeightOption.BOLD,
+            autoTextColor = false,
+            customTextColorHex = 0xFFFFFFFFL,
+            textGlowEnabled = true,
+            textShadowEnabled = true,
+            iconStyle = GlassIconStyle.GLASS,
+            batteryStyle = BatteryDisplayStyle.PILL,
+            weatherDisplayStyle = WeatherDisplayStyle.MAGIC_CARD,
+            temperatureSymbolStyle = TemperatureSymbolStyle.DEGREE_ONLY,
+            showWeatherCardBackground = true,
+            showLocationPin = true,
+            deviceTagText = "Honor GT",
+            showDeviceTag = true
+        )
+    )
+
     val ALL: List<GlassPreset> = listOf(
         CRYSTAL_CLEAR,
         AURORA_GLASS,
         MIDNIGHT_GLASS,
         FROSTED_PEARL,
-        ADAPTIVE_GLASS
+        ADAPTIVE_GLASS,
+        AMBER_SUNSET_GLASS
     )
 
     fun findById(id: String): GlassPreset {

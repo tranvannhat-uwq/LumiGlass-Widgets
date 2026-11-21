@@ -19,7 +19,9 @@ import com.lumiglass.widgets.R
 import com.lumiglass.widgets.model.ContentAlignmentOption
 import com.lumiglass.widgets.model.FontWeightOption
 import com.lumiglass.widgets.model.ResponsiveLayoutResolver
+import com.lumiglass.widgets.model.TemperatureSymbolStyle
 import com.lumiglass.widgets.model.TimezoneMode
+import com.lumiglass.widgets.model.WeatherDisplayStyle
 import com.lumiglass.widgets.model.WidgetConfig
 import com.lumiglass.widgets.model.WidgetDataSnapshot
 import com.lumiglass.widgets.model.WidgetModuleType
@@ -391,12 +393,8 @@ object WidgetRemoteViewsRenderer {
         )
         views.setImageViewBitmap(R.id.widget_weather_icon, iconBitmap)
 
-        val tempText = weather.formatTemp(weather.currentTempC, config.temperatureUnit)
-        val conditionText = if (weather.hasData) {
-            "${weather.conditionTextVi} • ${weather.cityNameVi}"
-        } else {
-            "${weather.cityNameVi} • Chưa có dữ liệu"
-        }
+        val degreeOnly = config.temperatureSymbolStyle == TemperatureSymbolStyle.DEGREE_ONLY
+        val formattedTemp = weather.formatTemp(weather.currentTempC, config.temperatureUnit, degreeOnly = degreeOnly)
 
         val combinedScale = (scaleFactor * config.textScale * config.weatherScale).coerceIn(0.60f, 1.50f)
         val tempSp = when (tier) {
@@ -415,50 +413,121 @@ object WidgetRemoteViewsRenderer {
             else -> 11f
         } * combinedScale
 
-        views.setTextViewText(R.id.widget_weather_temp, applyTypographySpans(tempText, config))
-        views.setTextViewTextSize(R.id.widget_weather_temp, TypedValue.COMPLEX_UNIT_SP, tempSp)
-        views.setTextColor(R.id.widget_weather_temp, primaryTextArgb)
+        when (config.weatherDisplayStyle) {
+            WeatherDisplayStyle.MAGIC_CARD -> {
+                if (config.showWeatherCardBackground) {
+                    views.setInt(R.id.widget_weather_container, "setBackgroundResource", R.drawable.bg_glass_weather_subcard)
+                } else {
+                    views.setInt(R.id.widget_weather_container, "setBackgroundResource", 0)
+                }
 
-        views.setTextViewText(R.id.widget_weather_condition, applyTypographySpans(conditionText, config, isHeader = false))
-        views.setTextViewTextSize(R.id.widget_weather_condition, TypedValue.COMPLEX_UNIT_SP, condSp)
-        views.setTextColor(R.id.widget_weather_condition, secondaryTextArgb)
+                // Row 1: Weather Condition ("Nhiều mây") & Temperature ("15°")
+                val condText = if (weather.hasData) weather.conditionTextVi else "${weather.cityNameVi} • Chờ dữ liệu"
+                views.setTextViewText(R.id.widget_weather_condition, applyTypographySpans(condText, config, isHeader = true))
+                views.setTextViewTextSize(R.id.widget_weather_condition, TypedValue.COMPLEX_UNIT_SP, condSp * 1.20f)
+                views.setTextColor(R.id.widget_weather_condition, primaryTextArgb)
 
-        if (tier == WidgetSizeTier.COMPACT_2X2) {
-            views.setViewVisibility(R.id.widget_weather_details, View.GONE)
-        } else {
-            val detailParts = mutableListOf<String>()
-            if (weather.hasData) {
-                if (config.showHighLowTemp && weather.highTempC != null && weather.lowTempC != null) {
-                    detailParts.add(weather.formatHighLow(config.temperatureUnit))
+                views.setTextViewText(R.id.widget_weather_temp, applyTypographySpans(formattedTemp, config, isHeader = true))
+                views.setTextViewTextSize(R.id.widget_weather_temp, TypedValue.COMPLEX_UNIT_SP, tempSp)
+                views.setTextColor(R.id.widget_weather_temp, primaryTextArgb)
+
+                // Row 2: Range & Rain ("14°–22° • Mưa 0%")
+                if (tier == WidgetSizeTier.COMPACT_2X2) {
+                    views.setViewVisibility(R.id.widget_weather_details, View.GONE)
+                } else {
+                    views.setViewVisibility(R.id.widget_weather_details, View.VISIBLE)
+                    val rangeDetails = weather.formatRangeAndPrecip(config.temperatureUnit, degreeOnly = degreeOnly)
+                    views.setTextViewText(R.id.widget_weather_details, applyTypographySpans(rangeDetails, config, isHeader = false))
+                    views.setTextViewTextSize(
+                        R.id.widget_weather_details,
+                        TypedValue.COMPLEX_UNIT_SP,
+                        (condSp * 0.95f).coerceAtLeast(9.5f)
+                    )
+                    views.setTextColor(R.id.widget_weather_details, secondaryTextArgb)
                 }
-                if (config.showHumidity && weather.humidityPercent != null) {
-                    detailParts.add("Ẩm ${weather.humidityPercent}%")
-                }
-                if (config.showRainProbability && weather.rainProbabilityPercent != null) {
-                    detailParts.add("Mưa ${weather.rainProbabilityPercent}%")
-                }
-                if (config.showFeelsLike && weather.feelsLikeC != null) {
-                    detailParts.add("Cảm giác ${weather.formatTemp(weather.feelsLikeC, config.temperatureUnit)}")
-                }
-                if (weather.isFromOfflineCache && !weather.errorMessageVi.isNullOrBlank()) {
-                    detailParts.add(weather.errorMessageVi)
-                }
-            } else {
-                detailParts.add(weather.errorMessageVi ?: "Kiểm tra kết nối mạng để cập nhật")
             }
 
-            if (detailParts.isEmpty()) {
-                views.setViewVisibility(R.id.widget_weather_details, View.GONE)
-            } else {
-                views.setViewVisibility(R.id.widget_weather_details, View.VISIBLE)
-                val detailsStr = detailParts.joinToString(" • ")
-                views.setTextViewText(R.id.widget_weather_details, applyTypographySpans(detailsStr, config, isHeader = false))
-                views.setTextViewTextSize(
-                    R.id.widget_weather_details,
-                    TypedValue.COMPLEX_UNIT_SP,
-                    (condSp * 0.92f).coerceAtLeast(9.5f)
-                )
-                views.setTextColor(R.id.widget_weather_details, secondaryTextArgb)
+            WeatherDisplayStyle.COMPACT_RANGE -> {
+                views.setInt(R.id.widget_weather_container, "setBackgroundResource", 0)
+
+                views.setTextViewText(R.id.widget_weather_temp, applyTypographySpans(formattedTemp, config, isHeader = true))
+                views.setTextViewTextSize(R.id.widget_weather_temp, TypedValue.COMPLEX_UNIT_SP, tempSp)
+                views.setTextColor(R.id.widget_weather_temp, primaryTextArgb)
+
+                val condText = if (weather.hasData) weather.conditionTextVi else weather.cityNameVi
+                views.setTextViewText(R.id.widget_weather_condition, applyTypographySpans(condText, config, isHeader = false))
+                views.setTextViewTextSize(R.id.widget_weather_condition, TypedValue.COMPLEX_UNIT_SP, condSp)
+                views.setTextColor(R.id.widget_weather_condition, secondaryTextArgb)
+
+                if (tier == WidgetSizeTier.COMPACT_2X2) {
+                    views.setViewVisibility(R.id.widget_weather_details, View.GONE)
+                } else {
+                    views.setViewVisibility(R.id.widget_weather_details, View.VISIBLE)
+                    val rangeCompact = weather.formatRangeCompact(config.temperatureUnit, degreeOnly = degreeOnly)
+                    views.setTextViewText(R.id.widget_weather_details, applyTypographySpans(rangeCompact, config, isHeader = false))
+                    views.setTextViewTextSize(
+                        R.id.widget_weather_details,
+                        TypedValue.COMPLEX_UNIT_SP,
+                        (condSp * 0.92f).coerceAtLeast(9.5f)
+                    )
+                    views.setTextColor(R.id.widget_weather_details, secondaryTextArgb)
+                }
+            }
+
+            WeatherDisplayStyle.CLASSIC_DETAILED -> {
+                views.setInt(R.id.widget_weather_container, "setBackgroundResource", 0)
+
+                views.setTextViewText(R.id.widget_weather_temp, applyTypographySpans(formattedTemp, config, isHeader = true))
+                views.setTextViewTextSize(R.id.widget_weather_temp, TypedValue.COMPLEX_UNIT_SP, tempSp)
+                views.setTextColor(R.id.widget_weather_temp, primaryTextArgb)
+
+                val conditionText = if (weather.hasData) {
+                    "${weather.conditionTextVi} • ${weather.cityNameVi}"
+                } else {
+                    "${weather.cityNameVi} • Chưa có dữ liệu"
+                }
+                views.setTextViewText(R.id.widget_weather_condition, applyTypographySpans(conditionText, config, isHeader = false))
+                views.setTextViewTextSize(R.id.widget_weather_condition, TypedValue.COMPLEX_UNIT_SP, condSp)
+                views.setTextColor(R.id.widget_weather_condition, secondaryTextArgb)
+
+                if (tier == WidgetSizeTier.COMPACT_2X2) {
+                    views.setViewVisibility(R.id.widget_weather_details, View.GONE)
+                } else {
+                    val detailParts = mutableListOf<String>()
+                    if (weather.hasData) {
+                        if (config.showHighLowTemp && weather.highTempC != null && weather.lowTempC != null) {
+                            detailParts.add(weather.formatHighLow(config.temperatureUnit, degreeOnly = degreeOnly))
+                        }
+                        if (config.showHumidity && weather.humidityPercent != null) {
+                            detailParts.add("Ẩm ${weather.humidityPercent}%")
+                        }
+                        if (config.showRainProbability && weather.rainProbabilityPercent != null) {
+                            detailParts.add("Mưa ${weather.rainProbabilityPercent}%")
+                        }
+                        if (config.showFeelsLike && weather.feelsLikeC != null) {
+                            detailParts.add("Cảm giác ${weather.formatTemp(weather.feelsLikeC, config.temperatureUnit, degreeOnly = degreeOnly)}")
+                        }
+                        if (weather.isFromOfflineCache && !weather.errorMessageVi.isNullOrBlank()) {
+                            detailParts.add(weather.errorMessageVi)
+                        }
+                    } else {
+                        detailParts.add(weather.errorMessageVi ?: "Kiểm tra kết nối mạng để cập nhật")
+                    }
+
+                    if (detailParts.isEmpty()) {
+                        views.setViewVisibility(R.id.widget_weather_details, View.GONE)
+                    } else {
+                        views.setViewVisibility(R.id.widget_weather_details, View.VISIBLE)
+                        val detailsStr = detailParts.joinToString(" • ")
+                        views.setTextViewText(R.id.widget_weather_details, applyTypographySpans(detailsStr, config, isHeader = false))
+                        views.setTextViewTextSize(
+                            R.id.widget_weather_details,
+                            TypedValue.COMPLEX_UNIT_SP,
+                            (condSp * 0.92f).coerceAtLeast(9.5f)
+                        )
+                        views.setTextColor(R.id.widget_weather_details, secondaryTextArgb)
+                    }
+                }
             }
         }
     }

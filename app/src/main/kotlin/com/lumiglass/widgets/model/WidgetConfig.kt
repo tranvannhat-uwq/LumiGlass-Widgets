@@ -46,10 +46,33 @@ enum class WidgetLayoutVariant(val labelVi: String, val descriptionVi: String) {
 }
 
 @Serializable
+enum class WeatherDisplayStyle(val labelVi: String, val descriptionVi: String) {
+    MAGIC_CARD(
+        "Thẻ kính Magic (như ảnh)",
+        "Thẻ kính bo góc: 'Nhiều mây', '14°–22° • Mưa 0%'"
+    ),
+    COMPACT_RANGE(
+        "Dải nhiệt độ tinh gọn",
+        "Hiển thị '15° Nhiều mây • 14°–22°'"
+    ),
+    CLASSIC_DETAILED(
+        "Cổ điển chi tiết",
+        "Hiển thị đầy đủ '15°C Nhiều mây • C:22° T:14°'"
+    )
+}
+
+@Serializable
+enum class TemperatureSymbolStyle(val labelVi: String) {
+    DEGREE_ONLY("Chỉ dấu độ '15°' (Tinh gọn như ảnh)"),
+    FULL_UNIT("Đầy đủ '15°C'")
+}
+
+@Serializable
 enum class ClockFontStyle(
     val labelVi: String,
     val androidFontFamily: String
 ) {
+    ROUNDED_GEOMETRIC("Bo tròn hiện đại (Honor/MagicOS)", "sans-serif-rounded"),
     MODERN_SANS("Modern Sans", "sans-serif"),
     THIN_ELEGANCE("Thin Elegance", "sans-serif-light"),
     BOLD_GEOMETRIC("Bold Geometric", "sans-serif-black"),
@@ -154,8 +177,14 @@ data class WidgetConfig(
 
     val showHighLowTemp: Boolean = true,
     val showHumidity: Boolean = true,
-    val showRainProbability: Boolean = false,
+    val showRainProbability: Boolean = true,
     val showFeelsLike: Boolean = false,
+    val weatherDisplayStyle: WeatherDisplayStyle = WeatherDisplayStyle.MAGIC_CARD,
+    val temperatureSymbolStyle: TemperatureSymbolStyle = TemperatureSymbolStyle.DEGREE_ONLY,
+    val showWeatherCardBackground: Boolean = true,
+    val showLocationPin: Boolean = true,
+    val deviceTagText: String = "Honor GT",
+    val showDeviceTag: Boolean = false,
 
     val batteryStyle: BatteryDisplayStyle = BatteryDisplayStyle.PILL,
     val colorBatteryByLevel: Boolean = true,

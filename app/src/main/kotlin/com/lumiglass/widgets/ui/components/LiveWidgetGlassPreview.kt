@@ -45,6 +45,8 @@ import com.lumiglass.widgets.model.BatteryDisplayStyle
 import com.lumiglass.widgets.model.ClockFontStyle
 import com.lumiglass.widgets.model.ContentAlignmentOption
 import com.lumiglass.widgets.model.FontWeightOption
+import com.lumiglass.widgets.model.TemperatureSymbolStyle
+import com.lumiglass.widgets.model.WeatherDisplayStyle
 import com.lumiglass.widgets.model.WidgetConfig
 import com.lumiglass.widgets.model.WidgetDataSnapshot
 import com.lumiglass.widgets.model.WidgetModuleType
@@ -1046,78 +1048,226 @@ private fun PreviewWeatherCluster(
 ) {
     val weather = snapshot.weatherInfo
     val scaledIconDp = (iconSizeDp.value * config.iconScale * config.weatherScale).dp
+    val degreeOnly = config.temperatureSymbolStyle == TemperatureSymbolStyle.DEGREE_ONLY
+    val isDark = snapshot.isSystemDarkTheme
 
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Canvas(modifier = Modifier.size(scaledIconDp)) {
-            drawIntoCanvas { c ->
-                GlassIconRenderer.drawWeatherIcon(
-                    canvas = c.nativeCanvas,
-                    sizePx = size.minDimension,
-                    category = weather.conditionCategory(),
-                    style = config.iconStyle,
-                    primaryTextArgb = palettePrimaryArgb
-                )
+    when (config.weatherDisplayStyle) {
+        WeatherDisplayStyle.MAGIC_CARD -> {
+            val cardShape = RoundedCornerShape(14.dp)
+            val cardModifier = if (config.showWeatherCardBackground) {
+                Modifier
+                    .clip(cardShape)
+                    .background(
+                        if (isDark) Color.White.copy(alpha = 0.09f) else Color.White.copy(alpha = 0.40f),
+                        cardShape
+                    )
+                    .border(
+                        width = 0.8.dp,
+                        brush = Brush.verticalGradient(
+                            listOf(
+                                Color.White.copy(alpha = if (isDark) 0.45f else 0.70f),
+                                Color.White.copy(alpha = 0.12f)
+                            )
+                        ),
+                        shape = cardShape
+                    )
+                    .padding(horizontal = 8.dp, vertical = 5.dp)
+            } else Modifier
+
+            Box(modifier = cardModifier) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Canvas(modifier = Modifier.size(scaledIconDp)) {
+                        drawIntoCanvas { c ->
+                            GlassIconRenderer.drawWeatherIcon(
+                                canvas = c.nativeCanvas,
+                                sizePx = size.minDimension,
+                                category = weather.conditionCategory(),
+                                style = config.iconStyle,
+                                primaryTextArgb = palettePrimaryArgb
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        // Line 1: Weather Condition ("Nhiều mây") + Current Temp ("15°")
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = weather.conditionTextVi,
+                                style = buildGlassTextStyle(
+                                    config = config,
+                                    fontSize = (condSp * 1.25f * config.textScale * config.weatherScale).sp,
+                                    color = primaryColor,
+                                    shadowArgb = paletteShadowArgb,
+                                    isHeader = true
+                                ),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = weather.formatTemp(weather.currentTempC, config.temperatureUnit, degreeOnly = degreeOnly),
+                                style = buildGlassTextStyle(
+                                    config = config,
+                                    fontSize = (tempSp * 1.05f * config.textScale * config.weatherScale).sp,
+                                    color = primaryColor,
+                                    shadowArgb = paletteShadowArgb,
+                                    isHeader = true
+                                )
+                            )
+                        }
+                        // Line 2: Temperature Range & Rain Probability ("14°–22° • Mưa 0%")
+                        if (showDetails) {
+                            val rangeDetails = weather.formatRangeAndPrecip(config.temperatureUnit, degreeOnly = degreeOnly)
+                            Text(
+                                text = rangeDetails,
+                                style = buildGlassTextStyle(
+                                    config = config,
+                                    fontSize = (condSp * 0.95f * config.textScale * config.weatherScale).sp,
+                                    color = secondaryColor.copy(alpha = 0.88f),
+                                    shadowArgb = paletteShadowArgb,
+                                    isHeader = false
+                                ),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
             }
         }
-        Spacer(modifier = Modifier.width(7.dp))
-        Column {
+
+        WeatherDisplayStyle.COMPACT_RANGE -> {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = weather.formatTemp(weather.currentTempC, config.temperatureUnit),
-                    style = buildGlassTextStyle(
-                        config = config,
-                        fontSize = (tempSp * config.textScale * config.weatherScale).sp,
-                        color = primaryColor,
-                        shadowArgb = paletteShadowArgb,
-                        isHeader = true
-                    )
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = if (weather.hasData) "${weather.conditionTextVi} • ${weather.cityNameVi}"
-                    else "${weather.cityNameVi} • Chưa có dữ liệu",
-                    style = buildGlassTextStyle(
-                        config = config,
-                        fontSize = (condSp * config.textScale * config.weatherScale).sp,
-                        color = secondaryColor,
-                        shadowArgb = paletteShadowArgb,
-                        isHeader = false
-                    ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            if (showDetails) {
-                val detailParts = mutableListOf<String>()
-                if (weather.hasData) {
-                    if (config.showHighLowTemp && weather.highTempC != null && weather.lowTempC != null) {
-                        detailParts.add(weather.formatHighLow(config.temperatureUnit))
+                Canvas(modifier = Modifier.size(scaledIconDp)) {
+                    drawIntoCanvas { c ->
+                        GlassIconRenderer.drawWeatherIcon(
+                            canvas = c.nativeCanvas,
+                            sizePx = size.minDimension,
+                            category = weather.conditionCategory(),
+                            style = config.iconStyle,
+                            primaryTextArgb = palettePrimaryArgb
+                        )
                     }
-                    if (config.showHumidity && weather.humidityPercent != null) {
-                        detailParts.add("Ẩm ${weather.humidityPercent}%")
-                    }
-                    if (config.showRainProbability && weather.rainProbabilityPercent != null) {
-                        detailParts.add("Mưa ${weather.rainProbabilityPercent}%")
-                    }
-                    if (config.showFeelsLike && weather.feelsLikeC != null) {
-                        detailParts.add("Cảm giác ${weather.formatTemp(weather.feelsLikeC, config.temperatureUnit)}")
-                    }
-                } else {
-                    detailParts.add("Đang chờ kết nối Open-Meteo")
                 }
-                if (detailParts.isNotEmpty()) {
-                    Text(
-                        text = detailParts.joinToString(" • "),
-                        style = buildGlassTextStyle(
-                            config = config,
-                            fontSize = ((condSp * 0.90f) * config.textScale * config.weatherScale).sp,
-                            color = secondaryColor.copy(alpha = 0.85f),
-                            shadowArgb = paletteShadowArgb,
-                            isHeader = false
-                        ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                Spacer(modifier = Modifier.width(7.dp))
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = weather.formatTemp(weather.currentTempC, config.temperatureUnit, degreeOnly = degreeOnly),
+                            style = buildGlassTextStyle(
+                                config = config,
+                                fontSize = (tempSp * config.textScale * config.weatherScale).sp,
+                                color = primaryColor,
+                                shadowArgb = paletteShadowArgb,
+                                isHeader = true
+                            )
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = weather.conditionTextVi,
+                            style = buildGlassTextStyle(
+                                config = config,
+                                fontSize = (condSp * config.textScale * config.weatherScale).sp,
+                                color = secondaryColor,
+                                shadowArgb = paletteShadowArgb,
+                                isHeader = false
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    if (showDetails) {
+                        Text(
+                            text = weather.formatRangeCompact(config.temperatureUnit, degreeOnly = degreeOnly),
+                            style = buildGlassTextStyle(
+                                config = config,
+                                fontSize = (condSp * 0.90f * config.textScale * config.weatherScale).sp,
+                                color = secondaryColor.copy(alpha = 0.85f),
+                                shadowArgb = paletteShadowArgb,
+                                isHeader = false
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        }
+
+        WeatherDisplayStyle.CLASSIC_DETAILED -> {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Canvas(modifier = Modifier.size(scaledIconDp)) {
+                    drawIntoCanvas { c ->
+                        GlassIconRenderer.drawWeatherIcon(
+                            canvas = c.nativeCanvas,
+                            sizePx = size.minDimension,
+                            category = weather.conditionCategory(),
+                            style = config.iconStyle,
+                            primaryTextArgb = palettePrimaryArgb
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(7.dp))
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = weather.formatTemp(weather.currentTempC, config.temperatureUnit, degreeOnly = degreeOnly),
+                            style = buildGlassTextStyle(
+                                config = config,
+                                fontSize = (tempSp * config.textScale * config.weatherScale).sp,
+                                color = primaryColor,
+                                shadowArgb = paletteShadowArgb,
+                                isHeader = true
+                            )
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (weather.hasData) "${weather.conditionTextVi} • ${weather.cityNameVi}"
+                            else "${weather.cityNameVi} • Chưa có dữ liệu",
+                            style = buildGlassTextStyle(
+                                config = config,
+                                fontSize = (condSp * config.textScale * config.weatherScale).sp,
+                                color = secondaryColor,
+                                shadowArgb = paletteShadowArgb,
+                                isHeader = false
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    if (showDetails) {
+                        val detailParts = mutableListOf<String>()
+                        if (weather.hasData) {
+                            if (config.showHighLowTemp && weather.highTempC != null && weather.lowTempC != null) {
+                                detailParts.add(weather.formatHighLow(config.temperatureUnit, degreeOnly = degreeOnly))
+                            }
+                            if (config.showHumidity && weather.humidityPercent != null) {
+                                detailParts.add("Ẩm ${weather.humidityPercent}%")
+                            }
+                            if (config.showRainProbability && weather.rainProbabilityPercent != null) {
+                                detailParts.add("Mưa ${weather.rainProbabilityPercent}%")
+                            }
+                            if (config.showFeelsLike && weather.feelsLikeC != null) {
+                                detailParts.add("Cảm giác ${weather.formatTemp(weather.feelsLikeC, config.temperatureUnit, degreeOnly = degreeOnly)}")
+                            }
+                        } else {
+                            detailParts.add("Đang chờ kết nối Open-Meteo")
+                        }
+                        if (detailParts.isNotEmpty()) {
+                            Text(
+                                text = detailParts.joinToString(" • "),
+                                style = buildGlassTextStyle(
+                                    config = config,
+                                    fontSize = ((condSp * 0.90f) * config.textScale * config.weatherScale).sp,
+                                    color = secondaryColor.copy(alpha = 0.85f),
+                                    shadowArgb = paletteShadowArgb,
+                                    isHeader = false
+                                ),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -1278,6 +1428,9 @@ private fun buildGlassTextStyle(
     isHeader: Boolean
 ): TextStyle {
     val fontFamily = when (config.fontStyle) {
+        ClockFontStyle.ROUNDED_GEOMETRIC -> runCatching {
+            FontFamily(android.graphics.Typeface.create("sans-serif-rounded", android.graphics.Typeface.NORMAL))
+        }.getOrElse { FontFamily.SansSerif }
         ClockFontStyle.MODERN_SANS -> FontFamily.SansSerif
         ClockFontStyle.THIN_ELEGANCE -> FontFamily.SansSerif
         ClockFontStyle.BOLD_GEOMETRIC -> FontFamily.SansSerif

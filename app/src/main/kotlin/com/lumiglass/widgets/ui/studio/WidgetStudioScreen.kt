@@ -86,8 +86,10 @@ import com.lumiglass.widgets.model.FontWeightOption
 import com.lumiglass.widgets.model.GlassIconStyle
 import com.lumiglass.widgets.model.GlassPreset
 import com.lumiglass.widgets.model.GlassThemeMode
+import com.lumiglass.widgets.model.TemperatureSymbolStyle
 import com.lumiglass.widgets.model.TemperatureUnit
 import com.lumiglass.widgets.model.TimezoneMode
+import com.lumiglass.widgets.model.WeatherDisplayStyle
 import com.lumiglass.widgets.model.WidgetConfig
 import com.lumiglass.widgets.model.WidgetDataSnapshot
 import com.lumiglass.widgets.model.WidgetLayoutVariant
@@ -822,8 +824,76 @@ private fun ContentTabContent(
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
-        // Weather Sub-details
-        StudioSectionTitle("D. Thông tin phụ của Thời tiết")
+        // Weather Sub-details & Formatting Style
+        StudioSectionTitle("D. Định dạng & Thông tin Thời tiết (Phong cách Honor/Magic)")
+        Text(
+            text = "Kiểu bố cục thời tiết:",
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold
+        )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            WeatherDisplayStyle.entries.forEach { style ->
+                FilterChip(
+                    selected = config.weatherDisplayStyle == style,
+                    onClick = { onUpdateConfig { it.copy(weatherDisplayStyle = style) } },
+                    label = { Text(style.labelVi) },
+                    modifier = Modifier.heightIn(min = 48.dp)
+                )
+            }
+        }
+
+        Text(
+            text = "Ký hiệu hiển thị nhiệt độ:",
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold
+        )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            TemperatureSymbolStyle.entries.forEach { symStyle ->
+                FilterChip(
+                    selected = config.temperatureSymbolStyle == symStyle,
+                    onClick = { onUpdateConfig { it.copy(temperatureSymbolStyle = symStyle) } },
+                    label = { Text(symStyle.labelVi) },
+                    modifier = Modifier.heightIn(min = 48.dp)
+                )
+            }
+        }
+
+        StudioSwitchRow(
+            title = "Nền thẻ kính bo góc cho thời tiết (Sub-card như ảnh)",
+            checked = config.showWeatherCardBackground,
+            onCheckedChange = { v -> onUpdateConfig { it.copy(showWeatherCardBackground = v) } }
+        )
+        StudioSwitchRow(
+            title = "Hiển thị ghim vị trí (VD: '📍 Hải Phòng')",
+            checked = config.showLocationPin,
+            onCheckedChange = { v -> onUpdateConfig { it.copy(showLocationPin = v) } }
+        )
+        StudioSwitchRow(
+            title = "Hiển thị nhãn thiết bị (VD: '● Honor GT')",
+            checked = config.showDeviceTag,
+            onCheckedChange = { v -> onUpdateConfig { it.copy(showDeviceTag = v) } }
+        )
+        if (config.showDeviceTag) {
+            OutlinedTextField(
+                value = config.deviceTagText,
+                onValueChange = { newTag -> onUpdateConfig { it.copy(deviceTagText = newTag) } },
+                label = { Text("Tên nhãn thiết bị (VD: Honor GT)") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        Text(
+            text = "Các chỉ số phụ khác:",
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold
+        )
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -831,19 +901,19 @@ private fun ContentTabContent(
             FilterChip(
                 selected = config.showHighLowTemp,
                 onClick = { onUpdateConfig { it.copy(showHighLowTemp = !it.showHighLowTemp) } },
-                label = { Text("Cao / Thấp trong ngày") },
-                modifier = Modifier.heightIn(min = 48.dp)
-            )
-            FilterChip(
-                selected = config.showHumidity,
-                onClick = { onUpdateConfig { it.copy(showHumidity = !it.showHumidity) } },
-                label = { Text("Độ ẩm (%)") },
+                label = { Text("Dải nhiệt độ ngày") },
                 modifier = Modifier.heightIn(min = 48.dp)
             )
             FilterChip(
                 selected = config.showRainProbability,
                 onClick = { onUpdateConfig { it.copy(showRainProbability = !it.showRainProbability) } },
                 label = { Text("Khả năng mưa (%)") },
+                modifier = Modifier.heightIn(min = 48.dp)
+            )
+            FilterChip(
+                selected = config.showHumidity,
+                onClick = { onUpdateConfig { it.copy(showHumidity = !it.showHumidity) } },
+                label = { Text("Độ ẩm (%)") },
                 modifier = Modifier.heightIn(min = 48.dp)
             )
             FilterChip(
