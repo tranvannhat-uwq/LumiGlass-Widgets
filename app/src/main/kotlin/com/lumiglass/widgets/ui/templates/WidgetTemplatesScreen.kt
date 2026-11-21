@@ -535,41 +535,60 @@ fun WidgetTemplatesScreen(
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             LiquidGlassButton(
                                 onClick = { onUsePresetDirectly(preset, selectedSizeTier, effectiveOverride) },
-                                modifier = Modifier.weight(1.25f),
-                                shape = RoundedCornerShape(16.dp)
+                                modifier = Modifier.weight(1.2f),
+                                shape = RoundedCornerShape(13.dp),
+                                isPrimary = true,
+                                minHeight = 40.dp,
+                                horizontalPadding = 12.dp,
+                                verticalPadding = 6.dp,
+                                elevation = 3.dp
                             ) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.AddToHomeScreen,
                                     contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(16.dp)
                                 )
-                                Spacer(modifier = Modifier.width(6.dp))
+                                Spacer(modifier = Modifier.width(5.dp))
                                 Text(
                                     text = if (isLauncherConfigureMode) {
                                         "Chọn mẫu này"
                                     } else {
                                         "Dùng mẫu ${selectedSizeTier.gridLabel}"
                                     },
-                                    fontWeight = FontWeight.ExtraBold
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
 
                             LiquidGlassButton(
                                 onClick = { onEditPreset(preset, selectedSizeTier, effectiveOverride) },
                                 modifier = Modifier.weight(0.85f),
-                                shape = RoundedCornerShape(16.dp)
+                                shape = RoundedCornerShape(13.dp),
+                                minHeight = 40.dp,
+                                horizontalPadding = 12.dp,
+                                verticalPadding = 6.dp,
+                                elevation = 2.dp
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Edit,
                                     contentDescription = null,
-                                    modifier = Modifier.size(17.dp)
+                                    modifier = Modifier.size(15.dp)
                                 )
                                 Spacer(modifier = Modifier.width(5.dp))
-                                Text("Tùy chỉnh", fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    text = "Tùy chỉnh",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
                             }
                         }
                     }

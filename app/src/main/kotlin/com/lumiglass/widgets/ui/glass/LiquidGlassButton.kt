@@ -59,10 +59,14 @@ import kotlin.math.tanh
 fun LiquidGlassButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    shape: Shape = RoundedCornerShape(16.dp),
+    shape: Shape = RoundedCornerShape(14.dp),
     tintColor: Color = Color.White.copy(alpha = 0.12f),
-    elevation: Dp = 6.dp,
+    elevation: Dp = 4.dp,
     enabled: Boolean = true,
+    isPrimary: Boolean = false,
+    minHeight: Dp = 42.dp,
+    horizontalPadding: Dp = 14.dp,
+    verticalPadding: Dp = 8.dp,
     content: @Composable RowScope.() -> Unit
 ) {
     val dark = isSystemInDarkTheme()
@@ -71,28 +75,37 @@ fun LiquidGlassButton(
     val pressProgress = remember { Animatable(0f) }
     var touchOffset by remember { mutableStateOf(Offset.Zero) }
 
-    val contentColor = if (dark) Color.White else MaterialTheme.colorScheme.onSurface
+    val contentColor = when {
+        isPrimary -> Color.White
+        dark -> Color.White
+        else -> MaterialTheme.colorScheme.onSurface
+    }
 
     // High-end Material Glass Palette
-    val bgBrush = if (dark) {
-        Brush.verticalGradient(
+    val bgBrush = when {
+        isPrimary -> Brush.verticalGradient(
             listOf(
-                Color.White.copy(alpha = 0.22f),
+                Color(0xFF2563EB),
+                Color(0xFF1D4ED8)
+            )
+        )
+        dark -> Brush.verticalGradient(
+            listOf(
+                Color.White.copy(alpha = 0.20f),
                 Color.White.copy(alpha = 0.08f)
             )
         )
-    } else {
-        Brush.verticalGradient(
+        else -> Brush.verticalGradient(
             listOf(
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f),
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.90f)
+                Color.White.copy(alpha = 0.94f),
+                Color(0xFFE2E8F0).copy(alpha = 0.72f)
             )
         )
     }
     val rimBrush = Brush.verticalGradient(
         listOf(
-            Color.White.copy(alpha = if (dark) 0.65f else 0.85f),
-            Color.White.copy(alpha = 0.10f)
+            Color.White.copy(alpha = if (isPrimary) 0.55f else if (dark) 0.55f else 0.90f),
+            Color.White.copy(alpha = if (isPrimary) 0.14f else 0.12f)
         )
     )
 
@@ -103,6 +116,7 @@ fun LiquidGlassButton(
             .background(bgBrush, shape)
             .border(width = 1.dp, brush = rimBrush, shape = shape)
             .graphicsLayer {
+                alpha = if (enabled) 1f else 0.52f
                 val progress = pressProgress.value
                 val scale = lerp(1f, 0.96f, progress)
                 scaleX = scale
@@ -147,8 +161,8 @@ fun LiquidGlassButton(
                     disabled()
                 }
             }
-            .heightIn(min = 48.dp)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .heightIn(min = minHeight)
+            .padding(horizontal = horizontalPadding, vertical = verticalPadding),
         contentAlignment = Alignment.Center
     ) {
         Row(

@@ -135,12 +135,21 @@ fun WallpaperStageWidgetPreview(
         modifier = modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center
     ) {
-        // True 1:1 scale with actual home screen launcher widget
         val availableWidth = maxWidth
-        val previewScale = if (availableWidth < 348.dp) {
+        val baseScale = if (availableWidth < 348.dp) {
             ((availableWidth - 20.dp) / 328.dp).coerceIn(0.84f, 1.0f)
         } else {
             1.0f
+        }
+        val previewScale = if (isCompact) {
+            when (tier) {
+                WidgetSizeTier.DASHBOARD_4X4 -> baseScale * 0.72f
+                WidgetSizeTier.PREMIUM_4X3 -> baseScale * 0.84f
+                WidgetSizeTier.ESSENTIAL_4X2 -> baseScale * 0.90f
+                else -> baseScale * 0.94f
+            }
+        } else {
+            baseScale
         }
 
         Column(
@@ -151,14 +160,14 @@ fun WallpaperStageWidgetPreview(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp))
+                    .clip(RoundedCornerShape(if (isCompact) 20.dp else 24.dp))
                     .background(Brush.linearGradient(wallpaper.gradientColors))
                     .border(
                         width = 1.dp,
-                        color = Color.White.copy(alpha = 0.18f),
-                        shape = RoundedCornerShape(24.dp)
+                        color = Color.White.copy(alpha = 0.20f),
+                        shape = RoundedCornerShape(if (isCompact) 20.dp else 24.dp)
                     )
-                    .padding(horizontal = 8.dp, vertical = 12.dp),
+                    .padding(horizontal = 8.dp, vertical = if (isCompact) 8.dp else 12.dp),
                 contentAlignment = Alignment.Center
             ) {
                 // Decorative background orbs to demonstrate glass translucency & edge refraction
@@ -197,83 +206,76 @@ fun WallpaperStageWidgetPreview(
                 )
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
-            // Wallpaper Simulator Selector Chips (Always visible)
+            // Unified Compact Toolbar: Left Size Pills + Right Circular Wallpaper Swatch Dots
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                SimulatedWallpaper.entries.forEach { wp ->
-                    val selected = wp == wallpaper
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(50))
-                            .background(
-                                if (selected) MaterialTheme.colorScheme.primaryContainer
-                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f)
-                            )
-                            .border(
-                                width = if (selected) 1.5.dp else 0.5.dp,
-                                color = if (selected) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                                shape = RoundedCornerShape(50)
-                            )
-                            .clickable { onWallpaperChange(wp) }
-                            .padding(vertical = 6.dp),
-                        contentAlignment = Alignment.Center
+                if (onSizeTierChange != null) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        WidgetSizeTier.entries.forEach { itemTier ->
+                            val isSelected = itemTier == tier
                             Box(
                                 modifier = Modifier
-                                    .size(9.dp)
-                                    .clip(CircleShape)
-                                    .background(Brush.linearGradient(wp.gradientColors))
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = wp.labelVi,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer
-                                else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                                    .weight(1f)
+                                    .height(26.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(
+                                        if (isSelected) MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f)
+                                    )
+                                    .clickable { onSizeTierChange(itemTier) },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = itemTier.gridLabel,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary
+                                    else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
+                    Spacer(modifier = Modifier.width(8.dp))
+                } else {
+                    Text(
+                        text = "Nền thử:",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
-            }
 
-            // Size Tier Switcher (Always visible when onSizeTierChange is provided)
-            if (onSizeTierChange != null) {
-                Spacer(modifier = Modifier.height(8.dp))
+                // Compact circular wallpaper dots
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(5.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    WidgetSizeTier.entries.forEach { itemTier ->
-                        val isSelected = itemTier == tier
+                    SimulatedWallpaper.entries.forEach { wp ->
+                        val selected = wp == wallpaper
                         Box(
                             modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(
-                                    if (isSelected) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                                .size(if (selected) 22.dp else 19.dp)
+                                .clip(CircleShape)
+                                .background(Brush.linearGradient(wp.gradientColors))
+                                .border(
+                                    width = if (selected) 2.dp else 0.8.dp,
+                                    color = if (selected) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.outline.copy(alpha = 0.45f),
+                                    shape = CircleShape
                                 )
-                                .clickable { onSizeTierChange(itemTier) }
-                                .padding(vertical = 7.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = itemTier.gridLabel,
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isSelected) MaterialTheme.colorScheme.onPrimary
-                                else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                                .clickable { onWallpaperChange(wp) }
+                        )
                     }
                 }
             }

@@ -42,8 +42,8 @@ fun LiquidMaterialChip(
     shape: Shape = CircleShape,
     isSelected: Boolean = false,
     onClick: (() -> Unit)? = null,
-    horizontalPadding: Dp = 12.dp,
-    verticalPadding: Dp = 6.dp
+    horizontalPadding: Dp = 11.dp,
+    verticalPadding: Dp = 5.dp
 ) {
     val dark = isSystemInDarkTheme()
 
@@ -122,15 +122,17 @@ fun LiquidMaterialChip(
                     imageVector = icon,
                     contentDescription = null,
                     tint = effectiveIconTint,
-                    modifier = Modifier.size(15.dp)
+                    modifier = Modifier.size(14.dp)
                 )
-                Spacer(modifier = Modifier.width(6.dp))
+                Spacer(modifier = Modifier.width(5.dp))
             }
             Text(
                 text = text,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
-                color = textColor
+                color = textColor,
+                maxLines = 1,
+                softWrap = false
             )
         }
     }

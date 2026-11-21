@@ -71,15 +71,15 @@ fun <T> LiquidGlassBottomBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .height(64.dp)
+            .padding(horizontal = 14.dp, vertical = 5.dp)
+            .height(58.dp)
             .liquidGlassSurface(
                 shape = barShape,
                 rimWidth = 1.dp,
-                elevation = 10.dp,
+                elevation = 8.dp,
                 isDarkTheme = dark
             )
-            .padding(horizontal = 6.dp, vertical = 5.dp)
+            .padding(horizontal = 5.dp, vertical = 4.dp)
     ) {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val totalWidth = maxWidth

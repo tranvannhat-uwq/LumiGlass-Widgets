@@ -139,31 +139,35 @@ fun CustomWidgetBuilderScreen(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // 1. Header
+        // 1. Compact Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
                 Text(
                     text = if (editingAppWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
-                        "Cá nhân hóa Widget #$editingAppWidgetId"
+                        "Cá nhân hóa • Widget #$editingAppWidgetId"
                     } else {
                         "Cá nhân hóa Widget"
                     },
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.ExtraBold
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.ExtraBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = "Chạm dấu + ở từng khung trống để tự xếp đặt thông tin theo ý thích",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = "Chạm ô dấu (+) để xếp thông tin & chỉnh độ trong kính lỏng",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
             Surface(
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(10.dp),
                 color = MaterialTheme.colorScheme.primaryContainer
             ) {
                 Text(
@@ -171,52 +175,79 @@ fun CustomWidgetBuilderScreen(
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp)
                 )
             }
         }
 
-        // 2. Standardized Widget Size Tier Selector
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        // 2. Unified Standardized Size Bar + Circular Wallpaper Dots
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "1. Chọn kích thước khung chuẩn",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "${activeTier.gridLabel} • ${tierSlots.size} vị trí",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
                 WidgetSizeTier.entries.forEach { tier ->
-                    val count = WidgetSlotBlueprints.slotsForTier(tier).size
-                    LiquidMaterialChip(
-                        text = "${tier.gridLabel} ($count ô)",
-                        isSelected = activeTier == tier,
-                        onClick = {
-                            if (tier != activeTier) {
-                                onUpdateConfig {
-                                    it.copy(
-                                        preferredSizeTier = tier,
-                                        useCustomSlots = true,
-                                        customSlots = WidgetSlotBlueprints.remapSlotsForTier(it.customSlots, tier)
-                                    )
+                    val isSelected = activeTier == tier
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(28.dp)
+                            .clip(RoundedCornerShape(9.dp))
+                            .background(
+                                if (isSelected) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f)
+                            )
+                            .clickable {
+                                if (tier != activeTier) {
+                                    onUpdateConfig {
+                                        it.copy(
+                                            preferredSizeTier = tier,
+                                            useCustomSlots = true,
+                                            customSlots = WidgetSlotBlueprints.remapSlotsForTier(it.customSlots, tier)
+                                        )
+                                    }
                                 }
-                            }
-                        }
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = tier.gridLabel,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            softWrap = false,
+                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary
+                            else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                SimulatedWallpaper.entries.forEach { wp ->
+                    val selected = wp == simulatedWallpaper
+                    Box(
+                        modifier = Modifier
+                            .size(if (selected) 22.dp else 19.dp)
+                            .clip(CircleShape)
+                            .background(Brush.linearGradient(wp.gradientColors))
+                            .border(
+                                width = if (selected) 2.dp else 0.8.dp,
+                                color = if (selected) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.outline.copy(alpha = 0.45f),
+                                shape = CircleShape
+                            )
+                            .clickable { onWallpaperChange(wp) }
                     )
                 }
             }
@@ -226,60 +257,19 @@ fun CustomWidgetBuilderScreen(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(26.dp))
+                .clip(RoundedCornerShape(22.dp))
                 .background(Brush.linearGradient(simulatedWallpaper.gradientColors))
-                .border(1.dp, Color.White.copy(alpha = 0.28f), RoundedCornerShape(26.dp))
-                .padding(horizontal = 12.dp, vertical = 14.dp),
+                .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(22.dp))
+                .padding(horizontal = 10.dp, vertical = 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Wallpaper Strip to inspect Glass Transparency
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Nền thử:",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.White.copy(alpha = 0.88f),
-                    fontWeight = FontWeight.Bold
-                )
-                SimulatedWallpaper.entries.forEach { wp ->
-                    val selected = wp == simulatedWallpaper
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(
-                                if (selected) Color.White.copy(alpha = 0.30f)
-                                else Color.Black.copy(alpha = 0.25f)
-                            )
-                            .border(
-                                width = if (selected) 1.2.dp else 0.6.dp,
-                                color = if (selected) Color.White else Color.White.copy(alpha = 0.25f),
-                                shape = RoundedCornerShape(10.dp)
-                            )
-                            .clickable { onWallpaperChange(wp) }
-                            .padding(horizontal = 9.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = wp.labelVi,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.White,
-                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
-                        )
-                    }
-                }
-            }
-
             // Interactive Standardized Slot Widget Canvas
             LiveWidgetGlassCard(
                 config = config.copy(useCustomSlots = true),
                 snapshot = snapshot.copy(isSystemDarkTheme = simulatedWallpaper.isDark),
                 tier = activeTier,
-                previewScale = 0.96f,
+                previewScale = 0.94f,
                 interactiveSlotEditMode = true,
                 selectedSlotId = selectedSlotForPicker?.slotId,
                 onSlotClick = { slotDef ->
@@ -287,7 +277,7 @@ fun CustomWidgetBuilderScreen(
                 }
             )
 
-            // Quick Canvas Utility Actions: Suggest / Reset Blank
+            // Quick Canvas Utility Actions: Suggest / Reset Blank (strictly single-line equal height)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -295,11 +285,12 @@ fun CustomWidgetBuilderScreen(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color.Black.copy(alpha = 0.35f))
-                        .border(0.8.dp, Color.White.copy(alpha = 0.32f), RoundedCornerShape(12.dp))
+                        .height(34.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color.Black.copy(alpha = 0.34f))
+                        .border(0.8.dp, Color.White.copy(alpha = 0.30f), RoundedCornerShape(10.dp))
                         .clickable { onFillSuggestedSlots() }
-                        .padding(vertical = 8.dp, horizontal = 10.dp),
+                        .padding(horizontal = 8.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Row(
@@ -310,13 +301,15 @@ fun CustomWidgetBuilderScreen(
                             imageVector = Icons.Default.AutoAwesome,
                             contentDescription = null,
                             tint = Color(0xFF7DD3FC),
-                            modifier = Modifier.size(15.dp)
+                            modifier = Modifier.size(14.dp)
                         )
                         Text(
-                            text = "Điền gợi ý chuẩn",
+                            text = "Gợi ý chuẩn",
                             style = MaterialTheme.typography.labelMedium,
                             color = Color.White,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            softWrap = false
                         )
                     }
                 }
@@ -324,11 +317,12 @@ fun CustomWidgetBuilderScreen(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color.Black.copy(alpha = 0.35f))
-                        .border(0.8.dp, Color.White.copy(alpha = 0.32f), RoundedCornerShape(12.dp))
+                        .height(34.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color.Black.copy(alpha = 0.34f))
+                        .border(0.8.dp, Color.White.copy(alpha = 0.30f), RoundedCornerShape(10.dp))
                         .clickable { onResetEmptySlots() }
-                        .padding(vertical = 8.dp, horizontal = 10.dp),
+                        .padding(horizontal = 8.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Row(
@@ -339,13 +333,15 @@ fun CustomWidgetBuilderScreen(
                             imageVector = Icons.Default.RestartAlt,
                             contentDescription = null,
                             tint = Color(0xFFFCA5A5),
-                            modifier = Modifier.size(15.dp)
+                            modifier = Modifier.size(14.dp)
                         )
                         Text(
-                            text = "Làm trống khung (+)",
+                            text = "Làm trống (+)",
                             style = MaterialTheme.typography.labelMedium,
                             color = Color.White,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            softWrap = false
                         )
                     }
                 }
@@ -643,25 +639,34 @@ fun CustomWidgetBuilderScreen(
             }
         }
 
-        // 5. Primary Action Bar
+        // 5. Primary Action Bar (strictly single-line uniform height)
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             LiquidGlassButton(
                 onClick = {
                     customTemplateName = "Mẫu ${activeTier.gridLabel} của tôi"
                     showSaveDialog = true
                 },
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(13.dp),
+                minHeight = 42.dp,
+                horizontalPadding = 14.dp,
+                verticalPadding = 6.dp
             ) {
                 Icon(
                     imageVector = Icons.Default.BookmarkAdd,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(16.dp)
                 )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Lưu mẫu", fontWeight = FontWeight.SemiBold)
+                Spacer(modifier = Modifier.width(5.dp))
+                Text(
+                    text = "Lưu mẫu",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    softWrap = false
+                )
             }
 
             LiquidGlassButton(
@@ -673,12 +678,16 @@ fun CustomWidgetBuilderScreen(
                     }
                 },
                 modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(13.dp),
+                isPrimary = true,
+                minHeight = 42.dp,
+                horizontalPadding = 14.dp,
+                verticalPadding = 6.dp
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.AddToHomeScreen,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
@@ -687,7 +696,11 @@ fun CustomWidgetBuilderScreen(
                     } else {
                         "Ghim ${activeTier.gridLabel} ra màn hình"
                     },
-                    fontWeight = FontWeight.ExtraBold
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }

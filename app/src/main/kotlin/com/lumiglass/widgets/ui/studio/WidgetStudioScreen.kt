@@ -225,85 +225,67 @@ fun WidgetStudioScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // 1. Top Bar & Live Preview Stage
+        // 1. Sleek Single-Line Header & Compact Live Preview Stage
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = 14.dp, vertical = 4.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
+                Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
                     Text(
                         text = if (editingAppWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
-                            "Widget Studio • Widget #$editingAppWidgetId"
+                            "Studio • Widget #$editingAppWidgetId"
                         } else {
-                            "Widget Studio • ${config.presetName}"
+                            "Studio • ${config.presetName}"
                         },
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.ExtraBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = "${config.preferredSizeTier.gridLabel} ${config.preferredSizeTier.titleVi} • Độ trong suốt ${(config.glassOpacity * 100).roundToInt()}%",
+                        text = "${config.preferredSizeTier.gridLabel} ${config.preferredSizeTier.titleVi} • Độ trong ${100 - (config.glassOpacity * 100).roundToInt()}%",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f),
-                        modifier = Modifier.clip(RoundedCornerShape(20.dp))
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = null,
-                                modifier = Modifier.size(13.dp),
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Chuẩn 1:1 Launcher",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
                     IconButton(
                         onClick = { showSavePresetDialog = true },
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.BookmarkAdd,
                             contentDescription = "Lưu Preset cá nhân",
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                     IconButton(
                         onClick = onResetDefault,
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.RestartAlt,
-                            contentDescription = "Khôi phục mặc định"
+                            contentDescription = "Khôi phục mặc định",
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             WallpaperStageWidgetPreview(
                 config = config,
@@ -311,37 +293,53 @@ fun WidgetStudioScreen(
                 wallpaper = simulatedWallpaper,
                 onWallpaperChange = onWallpaperChange,
                 onSizeTierChange = { newTier ->
-                    onUpdateConfig { it.copy(preferredSizeTier = newTier) }
+                    onUpdateConfig {
+                        if (it.useCustomSlots) {
+                            it.copy(
+                                preferredSizeTier = newTier,
+                                customSlots = com.lumiglass.widgets.model.WidgetSlotBlueprints.remapSlotsForTier(it.customSlots, newTier)
+                            )
+                        } else {
+                            it.copy(preferredSizeTier = newTier)
+                        }
+                    }
                 },
-                isCompact = false
+                isCompact = true
             )
         }
 
-        // 2. Editor Tabs styled as Liquid Glass Material Chips
+        // 2. Slim Compact Studio Section Tabs
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(horizontal = 14.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             StudioTab.entries.forEachIndexed { index, tab ->
                 LiquidMaterialChip(
                     text = tab.titleVi,
                     icon = tab.icon,
                     isSelected = selectedTabIndex == index,
+                    horizontalPadding = 10.dp,
+                    verticalPadding = 5.dp,
                     onClick = { selectedTabIndex = index }
                 )
             }
         }
 
-        // 3. Scrollable Tab Content
+        HorizontalDivider(
+            thickness = 0.6.dp,
+            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)
+        )
+
+        // 3. Spacious Scrollable Editor Controls Pane
         Box(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .padding(horizontal = 14.dp, vertical = 10.dp)
         ) {
             when (StudioTab.entries[selectedTabIndex]) {
                 StudioTab.APPEARANCE -> AppearanceTabContent(
@@ -376,59 +374,80 @@ fun WidgetStudioScreen(
             }
         }
 
-        // 4. Persistent Bottom Action Bar with Liquid Glass Buttons
+        // 4. Slim Executive Single-Line Bottom Action Bar
         val studioBottomModifier = if (isLauncherConfigureMode) Modifier.navigationBarsPadding() else Modifier
-        Surface(
-            tonalElevation = 6.dp,
-            shadowElevation = 10.dp,
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background)
                 .then(studioBottomModifier)
         ) {
+            HorizontalDivider(
+                thickness = 0.6.dp,
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)
+            )
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    .padding(horizontal = 14.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 LiquidGlassButton(
                     onClick = onSaveAndApply,
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(13.dp),
+                    isPrimary = true,
+                    minHeight = 40.dp,
+                    horizontalPadding = 12.dp,
+                    verticalPadding = 6.dp,
+                    elevation = 3.dp
                 ) {
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(16.dp)
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
+                    Spacer(modifier = Modifier.width(5.dp))
                     Text(
                         text = if (isLauncherConfigureMode) {
-                            "Áp dụng & Đặt Widget"
+                            "Áp dụng Widget"
                         } else if (editingAppWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
-                            "Áp dụng (#$editingAppWidgetId)"
+                            "Áp dụng #$editingAppWidgetId"
                         } else {
-                            "Lưu & Áp dụng"
+                            "Áp dụng"
                         },
-                        fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 
                 if (!isLauncherConfigureMode) {
                     LiquidGlassButton(
                         onClick = onPinToHomeScreen,
-                        shape = RoundedCornerShape(16.dp)
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(13.dp),
+                        minHeight = 40.dp,
+                        horizontalPadding = 12.dp,
+                        verticalPadding = 6.dp,
+                        elevation = 2.dp
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.AddToHomeScreen,
                             contentDescription = null,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(16.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(5.dp))
                         Text(
                             text = "Ghim màn hình",
-                            fontWeight = FontWeight.SemiBold
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
@@ -523,7 +542,7 @@ private fun AppearanceTabContent(
                     selected = config.themeMode == mode,
                     onClick = { onUpdateConfig { it.copy(themeMode = mode) } },
                     label = { Text(mode.labelVi) },
-                    modifier = Modifier.heightIn(min = 48.dp)
+                    modifier = Modifier.heightIn(min = 34.dp)
                 )
             }
         }
@@ -806,13 +825,13 @@ private fun ContentTabContent(
                     selected = config.weekCalendarDayCount == 5,
                     onClick = { onUpdateConfig { it.copy(weekCalendarDayCount = 5) } },
                     label = { Text("5 cột ngày (-2 .. Hôm nay .. +2)") },
-                    modifier = Modifier.heightIn(min = 48.dp)
+                    modifier = Modifier.heightIn(min = 34.dp)
                 )
                 FilterChip(
                     selected = config.weekCalendarDayCount == 7,
                     onClick = { onUpdateConfig { it.copy(weekCalendarDayCount = 7) } },
                     label = { Text("7 cột ngày (-3 .. Hôm nay .. +3)") },
-                    modifier = Modifier.heightIn(min = 48.dp)
+                    modifier = Modifier.heightIn(min = 34.dp)
                 )
             }
         }
@@ -845,7 +864,7 @@ private fun ContentTabContent(
                     selected = config.weatherDisplayStyle == style,
                     onClick = { onUpdateConfig { it.copy(weatherDisplayStyle = style) } },
                     label = { Text(style.labelVi) },
-                    modifier = Modifier.heightIn(min = 48.dp)
+                    modifier = Modifier.heightIn(min = 34.dp)
                 )
             }
         }
@@ -864,7 +883,7 @@ private fun ContentTabContent(
                     selected = config.temperatureSymbolStyle == symStyle,
                     onClick = { onUpdateConfig { it.copy(temperatureSymbolStyle = symStyle) } },
                     label = { Text(symStyle.labelVi) },
-                    modifier = Modifier.heightIn(min = 48.dp)
+                    modifier = Modifier.heightIn(min = 34.dp)
                 )
             }
         }
@@ -907,25 +926,25 @@ private fun ContentTabContent(
                 selected = config.showHighLowTemp,
                 onClick = { onUpdateConfig { it.copy(showHighLowTemp = !it.showHighLowTemp) } },
                 label = { Text("Dải nhiệt độ ngày") },
-                modifier = Modifier.heightIn(min = 48.dp)
+                modifier = Modifier.heightIn(min = 34.dp)
             )
             FilterChip(
                 selected = config.showRainProbability,
                 onClick = { onUpdateConfig { it.copy(showRainProbability = !it.showRainProbability) } },
                 label = { Text("Khả năng mưa (%)") },
-                modifier = Modifier.heightIn(min = 48.dp)
+                modifier = Modifier.heightIn(min = 34.dp)
             )
             FilterChip(
                 selected = config.showHumidity,
                 onClick = { onUpdateConfig { it.copy(showHumidity = !it.showHumidity) } },
                 label = { Text("Độ ẩm (%)") },
-                modifier = Modifier.heightIn(min = 48.dp)
+                modifier = Modifier.heightIn(min = 34.dp)
             )
             FilterChip(
                 selected = config.showFeelsLike,
                 onClick = { onUpdateConfig { it.copy(showFeelsLike = !it.showFeelsLike) } },
                 label = { Text("Cảm giác như") },
-                modifier = Modifier.heightIn(min = 48.dp)
+                modifier = Modifier.heightIn(min = 34.dp)
             )
         }
 
@@ -947,7 +966,7 @@ private fun ContentTabContent(
                     selected = config.telemetryDisplayStyle == tStyle,
                     onClick = { onUpdateConfig { it.copy(telemetryDisplayStyle = tStyle) } },
                     label = { Text(tStyle.labelVi) },
-                    modifier = Modifier.heightIn(min = 48.dp)
+                    modifier = Modifier.heightIn(min = 34.dp)
                 )
             }
         }
@@ -989,7 +1008,7 @@ private fun ContentTabContent(
                     selected = config.batteryStyle == bStyle,
                     onClick = { onUpdateConfig { it.copy(batteryStyle = bStyle) } },
                     label = { Text(bStyle.labelVi) },
-                    modifier = Modifier.heightIn(min = 48.dp)
+                    modifier = Modifier.heightIn(min = 34.dp)
                 )
             }
         }
@@ -1022,7 +1041,7 @@ private fun ContentTabContent(
                     selected = config.storageDisplayStyle == sStyle,
                     onClick = { onUpdateConfig { it.copy(storageDisplayStyle = sStyle) } },
                     label = { Text(sStyle.labelVi) },
-                    modifier = Modifier.heightIn(min = 48.dp)
+                    modifier = Modifier.heightIn(min = 34.dp)
                 )
             }
         }
@@ -1042,7 +1061,7 @@ private fun ContentTabContent(
                     selected = config.ramDisplayStyle == rStyle,
                     onClick = { onUpdateConfig { it.copy(ramDisplayStyle = rStyle) } },
                     label = { Text(rStyle.labelVi) },
-                    modifier = Modifier.heightIn(min = 48.dp)
+                    modifier = Modifier.heightIn(min = 34.dp)
                 )
             }
         }
@@ -1066,7 +1085,7 @@ private fun ContentTabContent(
                     selected = config.layoutVariant == variant,
                     onClick = { onUpdateConfig { it.copy(layoutVariant = variant) } },
                     label = { Text(variant.labelVi) },
-                    modifier = Modifier.heightIn(min = 48.dp)
+                    modifier = Modifier.heightIn(min = 34.dp)
                 )
             }
         }
@@ -1370,7 +1389,7 @@ private fun TypographyTabContent(
                     selected = config.fontStyle == fStyle,
                     onClick = { onUpdateConfig { it.copy(fontStyle = fStyle) } },
                     label = { Text(fStyle.labelVi) },
-                    modifier = Modifier.heightIn(min = 48.dp)
+                    modifier = Modifier.heightIn(min = 34.dp)
                 )
             }
         }
@@ -1386,7 +1405,7 @@ private fun TypographyTabContent(
                     selected = config.fontWeight == weight,
                     onClick = { onUpdateConfig { it.copy(fontWeight = weight) } },
                     label = { Text(weight.labelVi) },
-                    modifier = Modifier.heightIn(min = 48.dp)
+                    modifier = Modifier.heightIn(min = 34.dp)
                 )
             }
         }
@@ -1473,7 +1492,7 @@ private fun TypographyTabContent(
                     selected = config.iconStyle == iStyle,
                     onClick = { onUpdateConfig { it.copy(iconStyle = iStyle) } },
                     label = { Text(iStyle.labelVi) },
-                    modifier = Modifier.heightIn(min = 48.dp)
+                    modifier = Modifier.heightIn(min = 34.dp)
                 )
             }
         }
@@ -1497,7 +1516,7 @@ private fun TypographyTabContent(
                     selected = config.contentAlignment == align,
                     onClick = { onUpdateConfig { it.copy(contentAlignment = align) } },
                     label = { Text(align.labelVi) },
-                    modifier = Modifier.heightIn(min = 48.dp)
+                    modifier = Modifier.heightIn(min = 34.dp)
                 )
             }
         }
@@ -1558,7 +1577,7 @@ private fun DataTabContent(
                     Button(
                         onClick = onRefreshWeatherNow,
                         enabled = !isRefreshingWeather,
-                        modifier = Modifier.heightIn(min = 48.dp)
+                        modifier = Modifier.heightIn(min = 34.dp)
                     ) {
                         if (isRefreshingWeather) {
                             CircularProgressIndicator(
@@ -1614,7 +1633,7 @@ private fun DataTabContent(
                         }
                     } else null,
                     label = { Text(city.nameVi) },
-                    modifier = Modifier.heightIn(min = 48.dp)
+                    modifier = Modifier.heightIn(min = 34.dp)
                 )
             }
         }
@@ -1632,7 +1651,7 @@ private fun DataTabContent(
                     selected = config.temperatureUnit == unit,
                     onClick = { onUpdateConfig { it.copy(temperatureUnit = unit) } },
                     label = { Text(unit.labelVi) },
-                    modifier = Modifier.heightIn(min = 48.dp)
+                    modifier = Modifier.heightIn(min = 34.dp)
                 )
             }
         }
@@ -1648,7 +1667,7 @@ private fun DataTabContent(
                     selected = config.weatherRefreshMinutes == mins,
                     onClick = { onUpdateConfig { it.copy(weatherRefreshMinutes = mins) } },
                     label = { Text(label) },
-                    modifier = Modifier.heightIn(min = 48.dp)
+                    modifier = Modifier.heightIn(min = 34.dp)
                 )
             }
         }
@@ -1682,7 +1701,7 @@ private fun DataTabContent(
                     selected = config.timezoneMode == tzMode,
                     onClick = { onUpdateConfig { it.copy(timezoneMode = tzMode) } },
                     label = { Text(tzMode.labelVi) },
-                    modifier = Modifier.heightIn(min = 48.dp)
+                    modifier = Modifier.heightIn(min = 34.dp)
                 )
             }
         }

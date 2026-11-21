@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -39,9 +40,7 @@ import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.SystemUpdate
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -58,7 +57,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.lumiglass.widgets.data.config.AppGlobalSettings
 import com.lumiglass.widgets.data.update.AppUpdateManager
 import com.lumiglass.widgets.data.update.AppUpdateUiState
@@ -98,19 +99,23 @@ fun SettingsScreen(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Column {
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 text = "Cài đặt & Cập nhật",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.ExtraBold
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.ExtraBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = "Quản lý cập nhật trực tiếp từ GitHub, giao diện ứng dụng, nguồn thời tiết Open-Meteo và tối ưu hiệu năng widget.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text = "Quản lý cập nhật GitHub, giao diện, nguồn thời tiết Open-Meteo & sao lưu.",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
 
@@ -147,15 +152,21 @@ fun SettingsScreen(
                             context.startActivity(browserIntent)
                         }
                     },
-                    modifier = Modifier.heightIn(min = 48.dp)
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    modifier = Modifier.height(34.dp)
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.OpenInNew,
                         contentDescription = null,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(14.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("GitHub")
+                    Text(
+                        text = "GitHub",
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        softWrap = false
+                    )
                 }
             }
 
@@ -268,56 +279,80 @@ fun SettingsScreen(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Button(
+                LiquidGlassButton(
                     onClick = onCheckForUpdate,
                     enabled = !appUpdateState.isChecking && !appUpdateState.isDownloading,
-                    modifier = Modifier
-                        .weight(1f)
-                        .heightIn(min = 48.dp)
+                    isPrimary = true,
+                    minHeight = 40.dp,
+                    horizontalPadding = 10.dp,
+                    verticalPadding = 8.dp,
+                    elevation = 2.dp,
+                    modifier = Modifier.weight(1f)
                 ) {
                     if (appUpdateState.isChecking) {
                         CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
+                            modifier = Modifier.size(15.dp),
                             strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onPrimary
+                            color = Color.White
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Đang kiểm tra...")
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Đang kiểm tra...",
+                            fontSize = 12.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     } else {
                         Icon(
                             imageVector = Icons.Default.Sync,
                             contentDescription = null,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(15.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Kiểm tra cập nhật")
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Text(
+                            text = "Kiểm tra bản mới",
+                            fontSize = 12.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
 
                 if (latest != null && !latest.apkDownloadUrl.isNullOrBlank()) {
-                    FilledTonalButton(
+                    LiquidGlassButton(
                         onClick = onDownloadAndInstallUpdate,
                         enabled = !appUpdateState.isDownloading,
-                        modifier = Modifier
-                            .weight(1f)
-                            .heightIn(min = 48.dp)
+                        isPrimary = latest.isNewerThanCurrent,
+                        minHeight = 40.dp,
+                        horizontalPadding = 10.dp,
+                        verticalPadding = 8.dp,
+                        elevation = 2.dp,
+                        modifier = Modifier.weight(1f)
                     ) {
                         Icon(
                             imageVector = Icons.Default.CloudDownload,
                             contentDescription = null,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(15.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(5.dp))
                         Text(
                             text = if (latest.isNewerThanCurrent) {
                                 "Cập nhật ${latest.tagName}"
                             } else {
-                                "Tải & Cài đặt lại"
+                                "Tải & Cài lại"
                             },
-                            fontWeight = FontWeight.Bold
+                            fontSize = 12.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
@@ -325,21 +360,27 @@ fun SettingsScreen(
 
             if (appUpdateState.downloadedApkFile?.exists() == true && !appUpdateState.isDownloading) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Button(
+                LiquidGlassButton(
                     onClick = onInstallDownloadedApk,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 48.dp)
+                    isPrimary = true,
+                    minHeight = 40.dp,
+                    horizontalPadding = 12.dp,
+                    verticalPadding = 8.dp,
+                    elevation = 2.dp,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(
                         imageVector = Icons.Default.InstallMobile,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(16.dp)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Mở trình cài đặt APK đã tải (${appUpdateState.downloadedApkFile.name})",
-                        fontWeight = FontWeight.Bold
+                        text = "Cài đặt APK (${appUpdateState.downloadedApkFile.name})",
+                        fontSize = 12.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
@@ -383,36 +424,53 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(10.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Button(
+                LiquidGlassButton(
                     onClick = onManualBackup,
-                    modifier = Modifier
-                        .weight(1f)
-                        .heightIn(min = 44.dp)
+                    isPrimary = true,
+                    minHeight = 40.dp,
+                    horizontalPadding = 10.dp,
+                    verticalPadding = 8.dp,
+                    elevation = 2.dp,
+                    modifier = Modifier.weight(1f)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Backup,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(15.dp)
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Sao lưu ngay")
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text(
+                        text = "Sao lưu ngay",
+                        fontSize = 12.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false
+                    )
                 }
 
-                FilledTonalButton(
+                LiquidGlassButton(
                     onClick = onManualRestore,
-                    modifier = Modifier
-                        .weight(1f)
-                        .heightIn(min = 44.dp)
+                    minHeight = 40.dp,
+                    horizontalPadding = 10.dp,
+                    verticalPadding = 8.dp,
+                    elevation = 2.dp,
+                    modifier = Modifier.weight(1f)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Restore,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(15.dp)
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Khôi phục")
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text(
+                        text = "Khôi phục",
+                        fontSize = 12.5.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        softWrap = false
+                    )
                 }
             }
         }
@@ -456,29 +514,51 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(10.dp))
 
             Row(
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Button(
+                LiquidGlassButton(
                     onClick = {
                         permissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
                     },
-                    modifier = Modifier.heightIn(min = 48.dp)
+                    isPrimary = true,
+                    minHeight = 40.dp,
+                    horizontalPadding = 10.dp,
+                    verticalPadding = 8.dp,
+                    elevation = 2.dp,
+                    modifier = Modifier.weight(1f)
                 ) {
-                    Text("Cấp quyền Vị trí gần đúng")
+                    Text(
+                        text = "Cấp quyền Vị trí",
+                        fontSize = 12.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false
+                    )
                 }
 
-                Button(
+                LiquidGlassButton(
                     onClick = onSyncAllWidgetsNow,
-                    modifier = Modifier.heightIn(min = 48.dp)
+                    minHeight = 40.dp,
+                    horizontalPadding = 10.dp,
+                    verticalPadding = 8.dp,
+                    elevation = 2.dp,
+                    modifier = Modifier.weight(1f)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Sync,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(15.dp)
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Đồng bộ ($activeWidgetCount)")
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text(
+                        text = "Đồng bộ ($activeWidgetCount)",
+                        fontSize = 12.5.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        softWrap = false
+                    )
                 }
             }
 
@@ -499,7 +579,7 @@ fun SettingsScreen(
                         selected = globalSettings.defaultCityId == cityId,
                         onClick = { onUpdateGlobalSettings { it.copy(defaultCityId = cityId) } },
                         label = { Text(city.nameVi) },
-                        modifier = Modifier.heightIn(min = 48.dp)
+                        modifier = Modifier.heightIn(min = 36.dp)
                     )
                 }
             }
