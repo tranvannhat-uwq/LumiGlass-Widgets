@@ -746,9 +746,9 @@ object GlassIconRenderer {
         val levelFraction = if (battery.hasLevelData) pct / 100f else 0.5f
 
         // Top Battery Icon
-        val iconW = 15f * u
-        val iconH = 7.5f * u
-        val iconTop = h * 0.08f
+        val iconW = 16.5f * u
+        val iconH = 8.4f * u
+        val iconTop = h * 0.10f
         val iconRect = RectF(cx - iconW * 0.5f, iconTop, cx + iconW * 0.5f, iconTop + iconH)
         val iconCorner = iconH * 0.35f
 
@@ -759,7 +759,7 @@ object GlassIconRenderer {
         canvas.drawRoundRect(iconRect, iconCorner, iconCorner, iconFillPaint)
 
         // Terminal tip
-        val tipRect = RectF(iconRect.right + 0.7f * u, iconRect.centerY() - iconH * 0.22f, iconRect.right + 2.0f * u, iconRect.centerY() + iconH * 0.22f)
+        val tipRect = RectF(iconRect.right + 0.7f * u, iconRect.centerY() - iconH * 0.22f, iconRect.right + 2.1f * u, iconRect.centerY() + iconH * 0.22f)
         canvas.drawRoundRect(tipRect, 0.7f * u, 0.7f * u, iconFillPaint)
 
         // Bolt inside battery icon
@@ -768,27 +768,27 @@ object GlassIconRenderer {
             color = Color.WHITE
         }
         val boltPath = Path().apply {
-            moveTo(cx + 0.4f * u, iconRect.top + 1.0f * u)
-            lineTo(cx - 2.2f * u, iconRect.centerY() + 0.4f * u)
+            moveTo(cx + 0.4f * u, iconRect.top + 1.1f * u)
+            lineTo(cx - 2.3f * u, iconRect.centerY() + 0.4f * u)
             lineTo(cx - 0.1f * u, iconRect.centerY() + 0.4f * u)
-            lineTo(cx - 0.4f * u, iconRect.bottom - 1.0f * u)
-            lineTo(cx + 2.2f * u, iconRect.centerY() - 0.4f * u)
+            lineTo(cx - 0.4f * u, iconRect.bottom - 1.1f * u)
+            lineTo(cx + 2.3f * u, iconRect.centerY() - 0.4f * u)
             lineTo(cx + 0.1f * u, iconRect.centerY() - 0.4f * u)
             close()
         }
         canvas.drawPath(boltPath, boltPaint)
 
-        // Circular Arc Gauge wrapping percentage
-        val arcCenterY = h * 0.40f
-        val arcRadius = kotlin.math.min(w * 0.25f, h * 0.19f)
+        // Larger, cleaner Circular Arc Gauge wrapping percentage (no redundant "Pin" text)
+        val arcCenterY = h * 0.47f
+        val arcRadius = kotlin.math.min(w * 0.27f, h * 0.215f)
         val arcRect = RectF(cx - arcRadius, arcCenterY - arcRadius, cx + arcRadius, arcCenterY + arcRadius)
-        val arcStrokeW = 2.1f * u
+        val arcStrokeW = 2.4f * u
 
         val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
             strokeWidth = arcStrokeW
             strokeCap = Paint.Cap.ROUND
-            color = ColorUtils.setAlphaComponent(accentColor, 40)
+            color = ColorUtils.setAlphaComponent(accentColor, 42)
         }
         canvas.drawArc(arcRect, 135f, 270f, false, trackPaint)
 
@@ -800,50 +800,41 @@ object GlassIconRenderer {
         }
         canvas.drawArc(arcRect, 135f, 270f * levelFraction, false, progressPaint)
 
-        // Percentage Text inside Arc
+        // Larger Percentage Text centered cleanly inside Arc
         val pctPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             textAlign = Paint.Align.CENTER
-            textSize = 11.2f * u
+            textSize = 12.6f * u
             color = Color.WHITE
             typeface = Typeface.create("sans-serif-rounded", Typeface.BOLD)
-            setShadowLayer(3.5f * u, 0f, 1f * u, Color.argb(160, 0, 0, 0))
+            setShadowLayer(4f * u, 0f, 1f * u, Color.argb(165, 0, 0, 0))
         }
         val pctFm = pctPaint.fontMetrics
         canvas.drawText("$pct%", cx, arcCenterY - (pctFm.ascent + pctFm.descent) * 0.5f, pctPaint)
 
-        // "Pin" Label cleanly positioned between arc and bottom chip
-        val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            textAlign = Paint.Align.CENTER
-            textSize = 7.2f * u
-            color = 0xFFE2E8F0.toInt()
-            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-        }
-        canvas.drawText("Pin", cx, h * 0.70f, labelPaint)
-
         // Bottom Thermometer Chip: "🌡 29.6°C"
         val chipW = w * 0.84f
-        val chipH = (h * 0.17f).coerceAtMost(13.5f * u)
-        val chipTop = h * 0.77f
+        val chipH = (h * 0.19f).coerceAtMost(14.5f * u)
+        val chipTop = h * 0.75f
         val chipRect = RectF(cx - chipW * 0.5f, chipTop, cx + chipW * 0.5f, chipTop + chipH)
         val chipCorner = chipH * 0.48f
 
         val chipBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
-            color = Color.argb(168, 10, 15, 26)
+            color = Color.argb(172, 10, 15, 26)
         }
         canvas.drawRoundRect(chipRect, chipCorner, chipCorner, chipBgPaint)
 
         val chipBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
-            strokeWidth = 0.8f * u
-            color = ColorUtils.setAlphaComponent(tempColor, 110)
+            strokeWidth = 0.85f * u
+            color = ColorUtils.setAlphaComponent(tempColor, 118)
         }
         canvas.drawRoundRect(chipRect, chipCorner, chipCorner, chipBorderPaint)
 
         val tempText = "🌡 " + battery.formatTemperature(config.temperatureUnit)
         val chipTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             textAlign = Paint.Align.CENTER
-            textSize = 7.4f * u
+            textSize = 7.9f * u
             color = tempColor
             typeface = Typeface.create("sans-serif-rounded", Typeface.BOLD)
         }
@@ -872,57 +863,56 @@ object GlassIconRenderer {
         val pct = storage.usedPercent.coerceIn(0, 100)
         val levelFraction = pct / 100f
 
-        // Top Database Cylinder Icon
+        // Top 3D Database / Storage Cylinder Icon (crisp & unmistakable without text label)
         val diskPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
-            strokeWidth = 1.25f * u
+            strokeWidth = 1.35f * u
             color = Color.WHITE
         }
         val diskFill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
-            color = ColorUtils.setAlphaComponent(accentColor, 160)
+            color = ColorUtils.setAlphaComponent(accentColor, 165)
         }
 
-        val diskTop = h * 0.09f
-        val diskW = 15f * u
-        val diskH = 4.2f * u
+        val diskTop = h * 0.10f
+        val diskW = 16.5f * u
+        val diskH = 4.6f * u
+        val leftX = cx - diskW * 0.5f
+        val rightX = cx + diskW * 0.5f
 
-        val topOval = RectF(cx - diskW * 0.5f, diskTop, cx + diskW * 0.5f, diskTop + diskH)
+        val topOval = RectF(leftX, diskTop, rightX, diskTop + diskH)
         canvas.drawOval(topOval, diskFill)
         canvas.drawOval(topOval, diskPaint)
 
-        val botOval = RectF(cx - diskW * 0.5f, diskTop + 4.2f * u, cx + diskW * 0.5f, diskTop + diskH + 4.2f * u)
-        canvas.drawArc(botOval, 0f, 180f, false, diskPaint)
+        // Cylinder vertical side walls + middle & bottom disk rings
+        val midY = diskTop + 3.6f * u
+        val botY = diskTop + 7.2f * u
+        canvas.drawLine(leftX, diskTop + diskH * 0.5f, leftX, botY + diskH * 0.5f, diskPaint)
+        canvas.drawLine(rightX, diskTop + diskH * 0.5f, rightX, botY + diskH * 0.5f, diskPaint)
+        canvas.drawArc(RectF(leftX, midY, rightX, midY + diskH), 0f, 180f, false, diskPaint)
+        canvas.drawArc(RectF(leftX, botY, rightX, botY + diskH), 0f, 180f, false, diskPaint)
 
-        // Label: "Bộ nhớ"
-        val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            textAlign = Paint.Align.CENTER
-            textSize = 8.0f * u
-            color = 0xFFE2E8F0.toInt()
-            typeface = Typeface.create("sans-serif", Typeface.NORMAL)
-        }
-        canvas.drawText("Bộ nhớ", cx, h * 0.36f, labelPaint)
-
-        // Main Percentage: "68%"
+        // Larger, Prominent Main Percentage (no redundant "Bộ nhớ" label)
         val pctPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             textAlign = Paint.Align.CENTER
-            textSize = 13.2f * u
+            textSize = 15.8f * u
             color = Color.WHITE
             typeface = Typeface.create("sans-serif-rounded", Typeface.BOLD)
-            setShadowLayer(3.5f * u, 0f, 1f * u, Color.argb(160, 0, 0, 0))
+            setShadowLayer(4f * u, 0f, 1f * u, Color.argb(165, 0, 0, 0))
         }
-        canvas.drawText("$pct%", cx, h * 0.55f, pctPaint)
+        val pctFm = pctPaint.fontMetrics
+        canvas.drawText("$pct%", cx, h * 0.48f - (pctFm.ascent + pctFm.descent) * 0.5f, pctPaint)
 
         // Horizontal Glowing Progress Bar
         val barW = w * 0.78f
-        val barH = 3.8f * u
+        val barH = 4.3f * u
         val barY = h * 0.67f
         val barRect = RectF(cx - barW * 0.5f, barY - barH * 0.5f, cx + barW * 0.5f, barY + barH * 0.5f)
         val barCorner = barH * 0.5f
 
         val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
-            color = ColorUtils.setAlphaComponent(accentColor, 45)
+            color = ColorUtils.setAlphaComponent(accentColor, 48)
         }
         canvas.drawRoundRect(barRect, barCorner, barCorner, trackPaint)
 
@@ -939,15 +929,15 @@ object GlassIconRenderer {
         }
         canvas.drawRoundRect(fillRect, barCorner, barCorner, fillPaint)
 
-        // Bottom Detail: "74.2 / 108 GB"
+        // Bottom Detail: "147.8 / 454 GB"
         val detailPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             textAlign = Paint.Align.CENTER
-            textSize = 7.0f * u
+            textSize = 7.6f * u
             color = 0xFFCBD5E1.toInt()
-            typeface = Typeface.create("sans-serif", Typeface.NORMAL)
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
         }
         val detailText = storage.formatUsedAndTotalGb()
-        canvas.drawText(detailText, cx, h * 0.87f, detailPaint)
+        canvas.drawText(detailText, cx, h * 0.86f, detailPaint)
     }
 
     fun drawRamTrioCard(
@@ -971,75 +961,79 @@ object GlassIconRenderer {
         val pct = ram.usedPercent.coerceIn(0, 100)
         val levelFraction = pct / 100f
 
-        // Top RAM Microchip Icon
+        // Top RAM Microchip Stick Icon with pins (unmistakable without text label)
         val chipPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
-            strokeWidth = 1.25f * u
+            strokeWidth = 1.35f * u
             color = Color.WHITE
         }
         val chipFill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
-            color = ColorUtils.setAlphaComponent(accentColor, 150)
+            color = ColorUtils.setAlphaComponent(accentColor, 155)
         }
 
-        val iconTop = h * 0.09f
-        val chipW = 16f * u
-        val chipH = 8.5f * u
+        val iconTop = h * 0.11f
+        val chipW = 18.5f * u
+        val chipH = 9.2f * u
         val chipRect = RectF(cx - chipW * 0.5f, iconTop, cx + chipW * 0.5f, iconTop + chipH)
-        val chipCorner = 1.8f * u
+        val chipCorner = 2.0f * u
         canvas.drawRoundRect(chipRect, chipCorner, chipCorner, chipFill)
         canvas.drawRoundRect(chipRect, chipCorner, chipCorner, chipPaint)
 
-        // 3 internal modules inside RAM chip
+        // 3 internal memory dies inside RAM stick
         val modPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
-            strokeWidth = 0.85f * u
+            strokeWidth = 0.9f * u
             color = Color.WHITE
         }
-        val mPad = 2.2f * u
-        canvas.drawRect(RectF(chipRect.left + mPad, chipRect.top + 1.6f * u, chipRect.left + mPad + 2.3f * u, chipRect.bottom - 1.6f * u), modPaint)
-        canvas.drawRect(RectF(cx - 1.15f * u, chipRect.top + 1.6f * u, cx + 1.15f * u, chipRect.bottom - 1.6f * u), modPaint)
-        canvas.drawRect(RectF(chipRect.right - mPad - 2.3f * u, chipRect.top + 1.6f * u, chipRect.right - mPad, chipRect.bottom - 1.6f * u), modPaint)
+        val mPad = 2.5f * u
+        canvas.drawRect(RectF(chipRect.left + mPad, chipRect.top + 1.8f * u, chipRect.left + mPad + 2.6f * u, chipRect.bottom - 1.8f * u), modPaint)
+        canvas.drawRect(RectF(cx - 1.3f * u, chipRect.top + 1.8f * u, cx + 1.3f * u, chipRect.bottom - 1.8f * u), modPaint)
+        canvas.drawRect(RectF(chipRect.right - mPad - 2.6f * u, chipRect.top + 1.8f * u, chipRect.right - mPad, chipRect.bottom - 1.8f * u), modPaint)
 
-        // Label: "RAM"
-        val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            textAlign = Paint.Align.CENTER
-            textSize = 8.0f * u
-            color = 0xFFE2E8F0.toInt()
-            typeface = Typeface.create("sans-serif", Typeface.NORMAL)
+        // Bottom contact pins on RAM stick
+        val pinPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = 1.1f * u
+            strokeCap = Paint.Cap.ROUND
+            color = ColorUtils.setAlphaComponent(Color.WHITE, 210)
         }
-        canvas.drawText("RAM", cx, h * 0.36f, labelPaint)
+        for (i in 0..3) {
+            val px = chipRect.left + 3.2f * u + i * ((chipW - 6.4f * u) / 3f)
+            canvas.drawLine(px, chipRect.bottom + 0.6f * u, px, chipRect.bottom + 2.2f * u, pinPaint)
+        }
 
-        // Main Percentage: "72%"
+        // Larger, Prominent Main Percentage (no redundant "RAM" label)
         val pctPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             textAlign = Paint.Align.CENTER
-            textSize = 13.2f * u
+            textSize = 15.8f * u
             color = Color.WHITE
             typeface = Typeface.create("sans-serif-rounded", Typeface.BOLD)
-            setShadowLayer(3.5f * u, 0f, 1f * u, Color.argb(160, 0, 0, 0))
+            setShadowLayer(4f * u, 0f, 1f * u, Color.argb(165, 0, 0, 0))
         }
-        canvas.drawText("$pct%", cx, h * 0.55f, pctPaint)
+        val pctFm = pctPaint.fontMetrics
+        canvas.drawText("$pct%", cx, h * 0.48f - (pctFm.ascent + pctFm.descent) * 0.5f, pctPaint)
 
         // Sub Detail: "8.0 / 11.0G"
         val detailPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             textAlign = Paint.Align.CENTER
-            textSize = 7.0f * u
+            textSize = 7.8f * u
             color = 0xFFCBD5E1.toInt()
-            typeface = Typeface.create("sans-serif", Typeface.NORMAL)
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
         }
         val detailText = "${ram.formatUsedGb()} / ${ram.formatTotalGb()}G"
-        canvas.drawText(detailText, cx, h * 0.70f, detailPaint)
+        canvas.drawText(detailText, cx, h * 0.68f, detailPaint)
 
         // Horizontal Glowing Progress Bar at bottom
         val barW = w * 0.78f
-        val barH = 3.8f * u
-        val barY = h * 0.85f
+        val barH = 4.3f * u
+        val barY = h * 0.84f
         val barRect = RectF(cx - barW * 0.5f, barY - barH * 0.5f, cx + barW * 0.5f, barY + barH * 0.5f)
         val barCorner = barH * 0.5f
 
         val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
-            color = ColorUtils.setAlphaComponent(accentColor, 45)
+            color = ColorUtils.setAlphaComponent(accentColor, 48)
         }
         canvas.drawRoundRect(barRect, barCorner, barCorner, trackPaint)
 
