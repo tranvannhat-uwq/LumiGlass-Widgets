@@ -271,4 +271,43 @@ object OfficialGlassPresets {
     fun findById(id: String): GlassPreset {
         return ALL.firstOrNull { it.id == id } ?: CRYSTAL_CLEAR
     }
+
+    /**
+     * Creates a clean blank Liquid Glass canvas with standardized empty slots (+)
+     * ready for the user to personalize in the Custom Slot Builder.
+     */
+    fun createBlankCustomConfig(tier: WidgetSizeTier = WidgetSizeTier.ESSENTIAL_4X2): WidgetConfig {
+        return WidgetConfig(
+            presetId = "custom_slots_canvas",
+            presetName = "Cá nhân hóa kính lỏng",
+            preferredSizeTier = tier,
+            glassTintColorHex = 0xFF0F172AL,
+            glassSecondaryTintHex = 0xFF1E293BL,
+            borderColorHex = 0xFF7DD3FCL,
+            glassOpacity = 0.34f,
+            frostAmount = 0.44f,
+            borderLuminance = 0.84f,
+            cornerRadiusDp = 28f,
+            shadowIntensity = 0.50f,
+            highlightIntensity = 0.78f,
+            refractionIntensity = 0.70f,
+            themeMode = GlassThemeMode.AUTO,
+            fontStyle = ClockFontStyle.ROUNDED_GEOMETRIC,
+            fontWeight = FontWeightOption.BOLD,
+            autoTextColor = true,
+            customTextColorHex = 0xFFFFFFFFL,
+            textGlowEnabled = true,
+            textShadowEnabled = true,
+            iconStyle = GlassIconStyle.GLASS,
+            weatherDisplayStyle = WeatherDisplayStyle.MAGIC_CARD,
+            temperatureSymbolStyle = TemperatureSymbolStyle.DEGREE_ONLY,
+            dynamicAlertColors = true,
+            showBatteryPercent = true,
+            showBatteryTemp = true,
+            showRamStatus = true,
+            showStorageStatus = true,
+            useCustomSlots = true,
+            customSlots = emptyMap()
+        )
+    }
 }

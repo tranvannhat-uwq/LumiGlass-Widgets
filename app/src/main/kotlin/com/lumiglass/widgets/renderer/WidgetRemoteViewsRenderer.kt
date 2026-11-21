@@ -19,6 +19,7 @@ import com.lumiglass.widgets.R
 import com.lumiglass.widgets.model.ContentAlignmentOption
 import com.lumiglass.widgets.model.FontWeightOption
 import com.lumiglass.widgets.model.ResponsiveLayoutResolver
+import com.lumiglass.widgets.model.SlotContentType
 import com.lumiglass.widgets.model.TelemetryDisplayStyle
 import com.lumiglass.widgets.model.TemperatureSymbolStyle
 import com.lumiglass.widgets.model.TimezoneMode
@@ -27,6 +28,7 @@ import com.lumiglass.widgets.model.WidgetConfig
 import com.lumiglass.widgets.model.WidgetDataSnapshot
 import com.lumiglass.widgets.model.WidgetModuleType
 import com.lumiglass.widgets.model.WidgetSizeTier
+import com.lumiglass.widgets.model.WidgetSlotBlueprints
 
 /**
  * Constructs responsive Android [RemoteViews] for any LumiGlass widget instance.
@@ -50,6 +52,20 @@ object WidgetRemoteViewsRenderer {
         )
         val tier = metrics.effectiveTier
         val density = context.resources.displayMetrics.density
+
+        if (config.useCustomSlots) {
+            return buildCustomSlotsRemoteViews(
+                context = context,
+                appWidgetId = appWidgetId,
+                widthDp = metrics.widthDp,
+                heightDp = metrics.heightDp,
+                scaleFactor = metrics.scaleFactor,
+                tier = tier,
+                density = density,
+                config = config,
+                snapshot = snapshot
+            )
+        }
 
         val layoutResId = when (tier) {
             WidgetSizeTier.MINI_2X1 -> R.layout.widget_layout_2x1
@@ -955,5 +971,180 @@ object WidgetRemoteViewsRenderer {
             targetIntent,
             flags
         )
+    }
+
+    private data class CustomSlotViewIds(
+        val slotId: String,
+        val containerId: Int,
+        val bitmapId: Int,
+        val clockId: Int
+    )
+
+    private val CUSTOM_SLOT_VIEW_IDS = listOf(
+        CustomSlotViewIds(WidgetSlotBlueprints.SLOT_0, R.id.custom_slot_0_container, R.id.custom_slot_0_bitmap, R.id.custom_slot_0_clock),
+        CustomSlotViewIds(WidgetSlotBlueprints.SLOT_1, R.id.custom_slot_1_container, R.id.custom_slot_1_bitmap, R.id.custom_slot_1_clock),
+        CustomSlotViewIds(WidgetSlotBlueprints.SLOT_2, R.id.custom_slot_2_container, R.id.custom_slot_2_bitmap, R.id.custom_slot_2_clock),
+        CustomSlotViewIds(WidgetSlotBlueprints.SLOT_3, R.id.custom_slot_3_container, R.id.custom_slot_3_bitmap, R.id.custom_slot_3_clock),
+        CustomSlotViewIds(WidgetSlotBlueprints.SLOT_4, R.id.custom_slot_4_container, R.id.custom_slot_4_bitmap, R.id.custom_slot_4_clock),
+        CustomSlotViewIds(WidgetSlotBlueprints.SLOT_5, R.id.custom_slot_5_container, R.id.custom_slot_5_bitmap, R.id.custom_slot_5_clock),
+        CustomSlotViewIds(WidgetSlotBlueprints.SLOT_6, R.id.custom_slot_6_container, R.id.custom_slot_6_bitmap, R.id.custom_slot_6_clock)
+    )
+
+    private fun estimateSlotSizeDp(
+        tier: WidgetSizeTier,
+        slotId: String,
+        totalW: Int,
+        totalH: Int
+    ): Pair<Int, Int> {
+        val innerW = (totalW - 22).coerceAtLeast(80)
+        val innerH = (totalH - 22).coerceAtLeast(56)
+        return when (tier) {
+            WidgetSizeTier.MINI_2X1 -> when (slotId) {
+                WidgetSlotBlueprints.SLOT_0 -> (innerW * 0.50f).toInt() to innerH
+                else -> (innerW * 0.46f).toInt() to innerH
+            }
+            WidgetSizeTier.COMPACT_2X2 -> when (slotId) {
+                WidgetSlotBlueprints.SLOT_0 -> innerW to (innerH * 0.48f).toInt()
+                else -> (innerW * 0.48f).toInt() to (innerH * 0.48f).toInt()
+            }
+            WidgetSizeTier.ESSENTIAL_4X2 -> when (slotId) {
+                WidgetSlotBlueprints.SLOT_0 -> (innerW * 0.44f).toInt() to (innerH * 0.38f).toInt()
+                WidgetSlotBlueprints.SLOT_1 -> (innerW * 0.44f).toInt() to (innerH * 0.23f).toInt()
+                WidgetSlotBlueprints.SLOT_2 -> (innerW * 0.54f).toInt() to (innerH * 0.26f).toInt()
+                WidgetSlotBlueprints.SLOT_3 -> (innerW * 0.54f).toInt() to (innerH * 0.36f).toInt()
+                else -> innerW to (innerH * 0.37f).toInt()
+            }
+            WidgetSizeTier.PREMIUM_4X3 -> when (slotId) {
+                WidgetSlotBlueprints.SLOT_0, WidgetSlotBlueprints.SLOT_1 -> (innerW * 0.48f).toInt() to (innerH * 0.34f).toInt()
+                WidgetSlotBlueprints.SLOT_2, WidgetSlotBlueprints.SLOT_3, WidgetSlotBlueprints.SLOT_4 -> (innerW * 0.32f).toInt() to (innerH * 0.34f).toInt()
+                else -> innerW to (innerH * 0.29f).toInt()
+            }
+            WidgetSizeTier.DASHBOARD_4X4 -> when (slotId) {
+                WidgetSlotBlueprints.SLOT_0 -> (innerW * 0.53f).toInt() to (innerH * 0.25f).toInt()
+                WidgetSlotBlueprints.SLOT_1 -> (innerW * 0.45f).toInt() to (innerH * 0.25f).toInt()
+                WidgetSlotBlueprints.SLOT_2 -> innerW to (innerH * 0.21f).toInt()
+                WidgetSlotBlueprints.SLOT_3, WidgetSlotBlueprints.SLOT_4, WidgetSlotBlueprints.SLOT_5 -> (innerW * 0.32f).toInt() to (innerH * 0.27f).toInt()
+                else -> innerW to (innerH * 0.23f).toInt()
+            }
+        }
+    }
+
+    private fun buildCustomSlotsRemoteViews(
+        context: Context,
+        appWidgetId: Int,
+        widthDp: Int,
+        heightDp: Int,
+        scaleFactor: Float,
+        tier: WidgetSizeTier,
+        density: Float,
+        config: WidgetConfig,
+        snapshot: WidgetDataSnapshot
+    ): RemoteViews {
+        val layoutResId = when (tier) {
+            WidgetSizeTier.MINI_2X1 -> R.layout.widget_custom_2x1
+            WidgetSizeTier.COMPACT_2X2 -> R.layout.widget_custom_2x2
+            WidgetSizeTier.ESSENTIAL_4X2 -> R.layout.widget_custom_4x2
+            WidgetSizeTier.PREMIUM_4X3 -> R.layout.widget_custom_4x3
+            WidgetSizeTier.DASHBOARD_4X4 -> R.layout.widget_custom_4x4
+        }
+
+        val views = RemoteViews(context.packageName, layoutResId)
+        val palette = GlassSurfaceRenderer.resolvePalette(config, snapshot.isSystemDarkTheme)
+
+        // 1. Render main Liquid Glass surface bitmap
+        val glassBitmap = GlassSurfaceRenderer.renderGlassBitmap(
+            widthDp = widthDp,
+            heightDp = heightDp,
+            density = density,
+            config = config,
+            isSystemDarkTheme = snapshot.isSystemDarkTheme,
+            drawInternalDividersForTier = GlassSurfaceRenderer.DividerZoneLayout.NONE
+        )
+        views.setImageViewBitmap(R.id.widget_glass_bg, glassBitmap)
+
+        // Default click opens MainActivity to edit this widget
+        val defaultEditIntent = Intent(context, MainActivity::class.java).apply {
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+            putExtra(MainActivity.EXTRA_OPEN_STUDIO_DIRECTLY, true)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val piFlags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        val defaultPendingIntent = PendingIntent.getActivity(
+            context,
+            appWidgetId + 30_000,
+            defaultEditIntent,
+            piFlags
+        )
+        views.setOnClickPendingIntent(R.id.widget_root, defaultPendingIntent)
+
+        // 2. Bind each standardized slot for this tier
+        val activeSlots = WidgetSlotBlueprints.slotsForTier(tier)
+        val tzId = if (config.timezoneMode == TimezoneMode.VIETNAM_UTC7) "Asia/Ho_Chi_Minh" else null
+        val format24 = if (config.showSeconds) "HH:mm:ss" else "HH:mm"
+        val format12 = if (config.showSeconds) "hh:mm:ss" else "hh:mm"
+
+        activeSlots.forEachIndexed { idx, slotDef ->
+            val ids = CUSTOM_SLOT_VIEW_IDS.getOrNull(idx) ?: return@forEachIndexed
+            val contentType = WidgetSlotBlueprints.slotContent(config, slotDef.slotId)
+            val (slotW, slotH) = estimateSlotSizeDp(tier, slotDef.slotId, widthDp, heightDp)
+
+            if (contentType == SlotContentType.CLOCK) {
+                views.setViewVisibility(ids.bitmapId, View.GONE)
+                views.setViewVisibility(ids.clockId, View.VISIBLE)
+
+                views.setCharSequence(ids.clockId, "setFormat24Hour", if (config.use24HourFormat) format24 else format12)
+                views.setCharSequence(ids.clockId, "setFormat12Hour", if (config.use24HourFormat) format24 else format12)
+                if (tzId != null) {
+                    views.setString(ids.clockId, "setTimeZone", tzId)
+                }
+                val baseSp = (kotlin.math.min(slotH * 0.56f, slotW * 0.30f) * scaleFactor * config.textScale * config.clockScale)
+                    .coerceIn(16f, 44f)
+                views.setTextViewTextSize(ids.clockId, TypedValue.COMPLEX_UNIT_SP, baseSp)
+                views.setTextColor(ids.clockId, palette.primaryTextArgb)
+            } else if (contentType == SlotContentType.EMPTY) {
+                views.setViewVisibility(ids.clockId, View.GONE)
+                views.setViewVisibility(ids.bitmapId, View.GONE)
+            } else {
+                views.setViewVisibility(ids.clockId, View.GONE)
+                views.setViewVisibility(ids.bitmapId, View.VISIBLE)
+                val bmp = CustomSlotRenderer.renderSlotBitmap(
+                    widthDp = slotW,
+                    heightDp = slotH,
+                    density = density,
+                    contentType = contentType,
+                    config = config,
+                    snapshot = snapshot,
+                    isSystemDarkTheme = snapshot.isSystemDarkTheme,
+                    slotHintVi = slotDef.shortHintVi,
+                    showEmptyPlaceholder = false,
+                    drawClockTextOnCanvas = false
+                )
+                views.setImageViewBitmap(ids.bitmapId, bmp)
+            }
+
+            // Contextual click target per module
+            val slotPendingIntent = when (contentType) {
+                SlotContentType.WEATHER -> createWeatherAppPendingIntent(context, appWidgetId)
+                SlotContentType.BATTERY_WITH_TEMP -> PendingIntent.getActivity(
+                    context, appWidgetId + 41_000 + idx,
+                    Intent(Intent.ACTION_POWER_USAGE_SUMMARY).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                    piFlags
+                )
+                SlotContentType.STORAGE -> PendingIntent.getActivity(
+                    context, appWidgetId + 42_000 + idx,
+                    Intent(android.provider.Settings.ACTION_INTERNAL_STORAGE_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                    piFlags
+                )
+                SlotContentType.RAM -> PendingIntent.getActivity(
+                    context, appWidgetId + 43_000 + idx,
+                    Intent(android.provider.Settings.ACTION_DEVICE_INFO_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                    piFlags
+                )
+                else -> defaultPendingIntent
+            }
+            views.setOnClickPendingIntent(ids.containerId, slotPendingIntent)
+        }
+
+        return views
     }
 }

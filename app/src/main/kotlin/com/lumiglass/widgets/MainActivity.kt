@@ -5,27 +5,24 @@ import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Collections
-import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.DashboardCustomize
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material3.Icon
+import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -34,26 +31,24 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.lumiglass.widgets.model.WidgetSizeTier
-import com.lumiglass.widgets.ui.gallery.GalleryScreen
+import com.lumiglass.widgets.ui.customizer.CustomWidgetBuilderScreen
 import com.lumiglass.widgets.ui.glass.LiquidGlassBottomBar
 import com.lumiglass.widgets.ui.glass.LiquidNavDestinationItem
-import com.lumiglass.widgets.ui.home.HomeScreen
 import com.lumiglass.widgets.ui.settings.SettingsScreen
 import com.lumiglass.widgets.ui.studio.WidgetStudioScreen
 import com.lumiglass.widgets.ui.studio.WidgetStudioViewModel
+import com.lumiglass.widgets.ui.templates.WidgetTemplatesScreen
 import com.lumiglass.widgets.ui.theme.LumiGlassTheme
 import com.lumiglass.widgets.widget.WidgetUpdateScheduler
 
 private enum class MainDestination(val labelVi: String, val icon: ImageVector) {
-    HOME("Trang chủ", Icons.Default.Home),
-    GALLERY("Bộ sưu tập", Icons.Default.Collections),
-    STUDIO("Widget Studio", Icons.Default.Tune),
+    TEMPLATES("Mẫu Widget", Icons.Default.Widgets),
+    CUSTOMIZER("Cá nhân hóa", Icons.Default.DashboardCustomize),
+    STUDIO("Studio", Icons.Default.Tune),
     SETTINGS("Cài đặt", Icons.Default.Settings)
 }
 
@@ -78,7 +73,7 @@ class MainActivity : ComponentActivity() {
             LumiGlassTheme(themeMode = globalSettings.appThemeMode) {
                 LumiGlassMainApp(
                     viewModel = studioViewModel,
-                    initialOpenStudio = isLauncherConfigureIntent || openStudioRequested,
+                    initialOpenDirectEdit = openStudioRequested && !isLauncherConfigureIntent,
                     isLauncherConfigureMode = isLauncherConfigureIntent,
                     onFinishWidgetConfigure = { configuredWidgetId ->
                         if (isLauncherConfigureIntent && configuredWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
@@ -103,6 +98,8 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         studioViewModel.refreshBatteryTelemetry()
+        studioViewModel.refreshRamTelemetry()
+        studioViewModel.refreshStorageTelemetry()
         studioViewModel.refreshActiveWidgetsList()
     }
 
@@ -119,7 +116,6 @@ class MainActivity : ComponentActivity() {
 
         if (widgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
             incomingAppWidgetId = widgetId
-            // Set default RESULT_OK so pressing Back after previewing does not cancel widget placement
             val defaultResult = Intent().apply {
                 putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
             }
@@ -142,14 +138,10 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun LumiGlassMainApp(
     viewModel: WidgetStudioViewModel,
-    initialOpenStudio: Boolean,
+    initialOpenDirectEdit: Boolean,
     isLauncherConfigureMode: Boolean,
     onFinishWidgetConfigure: (Int) -> Unit
 ) {
-    var currentDestination by rememberSaveable {
-        mutableStateOf(if (initialOpenStudio) MainDestination.STUDIO else MainDestination.HOME)
-    }
-
     val activeConfig by viewModel.activeConfig.collectAsState()
     val snapshot by viewModel.liveSnapshot.collectAsState()
     val editingWidgetId by viewModel.editingAppWidgetId.collectAsState()
@@ -161,11 +153,29 @@ private fun LumiGlassMainApp(
     val appUpdateState by viewModel.appUpdateState.collectAsState()
     val statusMessage by viewModel.statusMessage.collectAsState()
 
+    var currentDestination by rememberSaveable {
+        mutableStateOf(
+            if (initialOpenDirectEdit) {
+                if (activeConfig.useCustomSlots) MainDestination.CUSTOMIZER else MainDestination.STUDIO
+            } else {
+                MainDestination.TEMPLATES
+            }
+        )
+    }
+
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(initialOpenStudio, editingWidgetId) {
-        if (initialOpenStudio || editingWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
-            currentDestination = MainDestination.STUDIO
+    BackHandler(enabled = currentDestination != MainDestination.TEMPLATES && !initialOpenDirectEdit) {
+        currentDestination = MainDestination.TEMPLATES
+    }
+
+    LaunchedEffect(initialOpenDirectEdit, activeConfig.appWidgetId, activeConfig.useCustomSlots) {
+        if (initialOpenDirectEdit && activeConfig.appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+            currentDestination = if (activeConfig.useCustomSlots) {
+                MainDestination.CUSTOMIZER
+            } else {
+                MainDestination.STUDIO
+            }
         }
     }
 
@@ -181,9 +191,7 @@ private fun LumiGlassMainApp(
         snackbarHost = {
             SnackbarHost(
                 hostState = snackbarHostState,
-                modifier = Modifier
-                    .navigationBarsPadding()
-                    .padding(bottom = 76.dp)
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
             )
         },
         bottomBar = {
@@ -193,7 +201,12 @@ private fun LumiGlassMainApp(
                         LiquidNavDestinationItem(it, it.labelVi, it.icon)
                     },
                     selectedDestination = currentDestination,
-                    onSelectDestination = { currentDestination = it },
+                    onSelectDestination = { dest ->
+                        if (dest == MainDestination.CUSTOMIZER) {
+                            viewModel.ensureCustomBuilderModeIfEmpty()
+                        }
+                        currentDestination = dest
+                    },
                     modifier = Modifier.navigationBarsPadding()
                 )
             }
@@ -203,53 +216,87 @@ private fun LumiGlassMainApp(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .statusBarsPadding()
                 .padding(bottom = innerPadding.calculateBottomPadding())
         ) {
             when (currentDestination) {
-                MainDestination.HOME -> HomeScreen(
-                    currentConfig = activeConfig,
-                    snapshot = snapshot,
+                MainDestination.TEMPLATES -> WidgetTemplatesScreen(
                     allPresets = allPresets,
+                    snapshot = snapshot,
                     activeWidgets = activeWidgets,
                     simulatedWallpaper = simulatedWallpaper,
                     appUpdateState = appUpdateState,
+                    editingAppWidgetId = editingWidgetId,
+                    isLauncherConfigureMode = isLauncherConfigureMode,
                     onWallpaperChange = viewModel::setSimulatedWallpaper,
-                    onOpenStudioForDraft = {
-                        currentDestination = MainDestination.STUDIO
+                    onUsePresetDirectly = { preset, tier, opacityOverride ->
+                        viewModel.usePresetDirectly(
+                            preset = preset,
+                            sizeTier = tier,
+                            opacityOverride = opacityOverride,
+                            isLauncherConfigureMode = isLauncherConfigureMode,
+                            onAppliedComplete = { appliedId ->
+                                onFinishWidgetConfigure(appliedId)
+                            }
+                        )
                     },
-                    onOpenStudioForPreset = { preset, tier ->
-                        viewModel.startNewWidgetFromPreset(preset, tier)
-                        currentDestination = MainDestination.STUDIO
+                    onEditPreset = { preset, tier, opacityOverride ->
+                        viewModel.startNewWidgetFromPresetWithOpacity(
+                            preset = preset,
+                            sizeTier = tier,
+                            opacityOverride = opacityOverride,
+                            preserveWidgetId = isLauncherConfigureMode
+                        )
+                        currentDestination = if (preset.defaultConfig.useCustomSlots) {
+                            MainDestination.CUSTOMIZER
+                        } else {
+                            MainDestination.STUDIO
+                        }
                     },
-                    onOpenStudioForActiveWidget = { summary ->
+                    onStartBlankCustomBuilder = { tier ->
+                        viewModel.startBlankCustomBuilder(
+                            sizeTier = tier,
+                            preserveWidgetId = isLauncherConfigureMode
+                        )
+                        currentDestination = MainDestination.CUSTOMIZER
+                    },
+                    onEditActiveWidget = { summary ->
                         viewModel.loadWidgetForEditing(summary.appWidgetId, summary.providerTier)
-                        currentDestination = MainDestination.STUDIO
+                        currentDestination = if (summary.config.useCustomSlots) {
+                            MainDestination.CUSTOMIZER
+                        } else {
+                            MainDestination.STUDIO
+                        }
                     },
-                    onPinWidgetTier = { tier ->
-                        viewModel.requestPinToHomeScreen(tier)
-                    },
+                    onDeleteCustomPreset = viewModel::deleteCustomPreset,
                     onSyncAllWidgets = viewModel::syncAllWidgetsNow,
-                    onNavigateToGallery = {
-                        currentDestination = MainDestination.GALLERY
-                    },
                     onNavigateToUpdateSettings = {
                         currentDestination = MainDestination.SETTINGS
                     }
                 )
 
-                MainDestination.GALLERY -> GalleryScreen(
-                    allPresets = allPresets,
+                MainDestination.CUSTOMIZER -> CustomWidgetBuilderScreen(
+                    config = activeConfig,
                     snapshot = snapshot,
+                    editingAppWidgetId = editingWidgetId,
                     simulatedWallpaper = simulatedWallpaper,
-                    onSelectPresetForStudio = { preset, tier ->
-                        viewModel.startNewWidgetFromPreset(preset, tier)
+                    isLauncherConfigureMode = isLauncherConfigureMode,
+                    onWallpaperChange = viewModel::setSimulatedWallpaper,
+                    onUpdateConfig = viewModel::updateConfig,
+                    onResetEmptySlots = viewModel::resetCustomSlotsToBlank,
+                    onFillSuggestedSlots = viewModel::fillSuggestedCustomSlots,
+                    onSaveCustomPreset = viewModel::saveCurrentAsCustomPreset,
+                    onSaveAndApply = {
+                        viewModel.saveAndApplyToWidget { appliedId ->
+                            onFinishWidgetConfigure(appliedId)
+                        }
+                    },
+                    onPinToHomeScreen = {
+                        viewModel.requestPinToHomeScreen(activeConfig.preferredSizeTier)
+                    },
+                    onOpenAdvancedStudio = {
                         currentDestination = MainDestination.STUDIO
-                    },
-                    onPinPresetDirectly = { preset, tier ->
-                        viewModel.startNewWidgetFromPreset(preset, tier)
-                        viewModel.requestPinToHomeScreen(tier)
-                    },
-                    onDeleteCustomPreset = viewModel::deleteCustomPreset
+                    }
                 )
 
                 MainDestination.STUDIO -> WidgetStudioScreen(

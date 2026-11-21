@@ -345,4 +345,49 @@ class LumiGlassCoreEngineTest {
         assertTrue(preset.defaultConfig.showBatteryCard)
         assertTrue(preset.defaultConfig.showRamCard)
     }
+
+    @Test
+    fun testStandardizedSlotBlueprintsAndBlankCustomCanvas() {
+        assertEquals(2, com.lumiglass.widgets.model.WidgetSlotBlueprints.slotsForTier(WidgetSizeTier.MINI_2X1).size)
+        assertEquals(3, com.lumiglass.widgets.model.WidgetSlotBlueprints.slotsForTier(WidgetSizeTier.COMPACT_2X2).size)
+        assertEquals(5, com.lumiglass.widgets.model.WidgetSlotBlueprints.slotsForTier(WidgetSizeTier.ESSENTIAL_4X2).size)
+        assertEquals(6, com.lumiglass.widgets.model.WidgetSlotBlueprints.slotsForTier(WidgetSizeTier.PREMIUM_4X3).size)
+        assertEquals(7, com.lumiglass.widgets.model.WidgetSlotBlueprints.slotsForTier(WidgetSizeTier.DASHBOARD_4X4).size)
+
+        val blank = OfficialGlassPresets.createBlankCustomConfig(WidgetSizeTier.PREMIUM_4X3)
+        assertTrue(blank.useCustomSlots)
+        assertTrue(blank.customSlots.isEmpty())
+        assertEquals(0, com.lumiglass.widgets.model.WidgetSlotBlueprints.filledCount(blank, WidgetSizeTier.PREMIUM_4X3))
+
+        val suggested = blank.copy(
+            customSlots = com.lumiglass.widgets.model.WidgetSlotBlueprints.suggestedSlotsForTier(WidgetSizeTier.PREMIUM_4X3),
+            glassOpacity = 0.62f,
+            frostAmount = 0.70f
+        )
+        assertEquals(6, com.lumiglass.widgets.model.WidgetSlotBlueprints.filledCount(suggested, WidgetSizeTier.PREMIUM_4X3))
+
+        val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+        val encoded = json.encodeToString(suggested)
+        val decoded = json.decodeFromString<WidgetConfig>(encoded)
+
+        assertTrue(decoded.useCustomSlots)
+        assertEquals(com.lumiglass.widgets.model.SlotContentType.CLOCK, decoded.customSlots["slot_0"])
+        assertEquals(com.lumiglass.widgets.model.SlotContentType.WEATHER, decoded.customSlots["slot_1"])
+        assertEquals(com.lumiglass.widgets.model.SlotContentType.BATTERY_WITH_TEMP, decoded.customSlots["slot_2"])
+        assertEquals(com.lumiglass.widgets.model.SlotContentType.STORAGE, decoded.customSlots["slot_3"])
+        assertEquals(com.lumiglass.widgets.model.SlotContentType.RAM, decoded.customSlots["slot_4"])
+        assertEquals(com.lumiglass.widgets.model.SlotContentType.WEEK_CALENDAR, decoded.customSlots["slot_5"])
+        assertEquals(0.62f, decoded.glassOpacity, 0.001f)
+        assertEquals(0.70f, decoded.frostAmount, 0.001f)
+
+        // Remapping from 4x2 (with Trio + Week Calendar) -> 4x3 expands Trio into 3 cards & moves Calendar to bottom slot_5
+        val slots4x2 = com.lumiglass.widgets.model.WidgetSlotBlueprints.suggestedSlotsForTier(WidgetSizeTier.ESSENTIAL_4X2)
+        val remapped4x3 = com.lumiglass.widgets.model.WidgetSlotBlueprints.remapSlotsForTier(slots4x2, WidgetSizeTier.PREMIUM_4X3)
+        assertEquals(com.lumiglass.widgets.model.SlotContentType.CLOCK, remapped4x3["slot_0"])
+        assertEquals(com.lumiglass.widgets.model.SlotContentType.WEATHER, remapped4x3["slot_1"])
+        assertEquals(com.lumiglass.widgets.model.SlotContentType.BATTERY_WITH_TEMP, remapped4x3["slot_2"])
+        assertEquals(com.lumiglass.widgets.model.SlotContentType.STORAGE, remapped4x3["slot_3"])
+        assertEquals(com.lumiglass.widgets.model.SlotContentType.RAM, remapped4x3["slot_4"])
+        assertEquals(com.lumiglass.widgets.model.SlotContentType.WEEK_CALENDAR, remapped4x3["slot_5"])
+    }
 }

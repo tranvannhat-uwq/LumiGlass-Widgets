@@ -25,6 +25,7 @@ import com.lumiglass.widgets.model.WidgetConfig
 import com.lumiglass.widgets.model.WidgetDataSnapshot
 import com.lumiglass.widgets.model.WidgetModuleType
 import com.lumiglass.widgets.model.WidgetSizeTier
+import com.lumiglass.widgets.model.WidgetSlotBlueprints
 import com.lumiglass.widgets.ui.components.SimulatedWallpaper
 import com.lumiglass.widgets.widget.ActiveWidgetSummary
 import com.lumiglass.widgets.widget.WidgetUpdateScheduler
@@ -234,18 +235,106 @@ class WidgetStudioViewModel(application: Application) : AndroidViewModel(applica
         preset: GlassPreset,
         sizeTier: WidgetSizeTier = _activeConfig.value.preferredSizeTier
     ) {
-        _editingAppWidgetId.value = AppWidgetManager.INVALID_APPWIDGET_ID
-        val currentCity = _activeConfig.value.cityId
-        val currentLoc = _activeConfig.value.useCoarseLocation
+        startNewWidgetFromPresetWithOpacity(preset, sizeTier, opacityOverride = null, preserveWidgetId = false)
+    }
+
+    fun startNewWidgetFromPresetWithOpacity(
+        preset: GlassPreset,
+        sizeTier: WidgetSizeTier = _activeConfig.value.preferredSizeTier,
+        opacityOverride: Float? = null,
+        preserveWidgetId: Boolean = false
+    ) {
+        val targetId = if (preserveWidgetId) _editingAppWidgetId.value else AppWidgetManager.INVALID_APPWIDGET_ID
+        if (!preserveWidgetId) {
+            _editingAppWidgetId.value = AppWidgetManager.INVALID_APPWIDGET_ID
+        }
+        val current = _activeConfig.value
         _activeConfig.value = preset.defaultConfig.copy(
-            appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID,
+            appWidgetId = targetId,
             preferredSizeTier = sizeTier,
-            cityId = currentCity,
-            useCoarseLocation = currentLoc
+            glassOpacity = opacityOverride ?: preset.defaultConfig.glassOpacity,
+            cityId = current.cityId,
+            useCoarseLocation = current.useCoarseLocation,
+            temperatureUnit = current.temperatureUnit,
+            weatherRefreshMinutes = current.weatherRefreshMinutes
         )
         viewModelScope.launch {
             configRepo.saveStudioDraft(_activeConfig.value)
         }
+    }
+
+    fun usePresetDirectly(
+        preset: GlassPreset,
+        sizeTier: WidgetSizeTier,
+        opacityOverride: Float? = null,
+        isLauncherConfigureMode: Boolean = false,
+        onAppliedComplete: ((Int) -> Unit)? = null
+    ) {
+        startNewWidgetFromPresetWithOpacity(
+            preset = preset,
+            sizeTier = sizeTier,
+            opacityOverride = opacityOverride,
+            preserveWidgetId = isLauncherConfigureMode
+        )
+        if (isLauncherConfigureMode && _editingAppWidgetId.value != AppWidgetManager.INVALID_APPWIDGET_ID) {
+            saveAndApplyToWidget(onAppliedComplete)
+        } else {
+            requestPinToHomeScreen(sizeTier)
+        }
+    }
+
+    fun startBlankCustomBuilder(
+        sizeTier: WidgetSizeTier = _activeConfig.value.preferredSizeTier,
+        preserveWidgetId: Boolean = false
+    ) {
+        val targetId = if (preserveWidgetId) _editingAppWidgetId.value else AppWidgetManager.INVALID_APPWIDGET_ID
+        if (!preserveWidgetId) {
+            _editingAppWidgetId.value = AppWidgetManager.INVALID_APPWIDGET_ID
+        }
+        val current = _activeConfig.value
+        _activeConfig.value = OfficialGlassPresets.createBlankCustomConfig(sizeTier).copy(
+            appWidgetId = targetId,
+            cityId = current.cityId,
+            useCoarseLocation = current.useCoarseLocation,
+            temperatureUnit = current.temperatureUnit,
+            weatherRefreshMinutes = current.weatherRefreshMinutes
+        )
+        _statusMessage.value = "Khung kính trống ${sizeTier.gridLabel} đã sẵn sàng — Chạm dấu (+) để thêm thông tin"
+    }
+
+    fun ensureCustomBuilderModeIfEmpty() {
+        val current = _activeConfig.value
+        if (!current.useCustomSlots) {
+            _activeConfig.value = OfficialGlassPresets.createBlankCustomConfig(current.preferredSizeTier).copy(
+                appWidgetId = current.appWidgetId,
+                cityId = current.cityId,
+                useCoarseLocation = current.useCoarseLocation,
+                temperatureUnit = current.temperatureUnit,
+                weatherRefreshMinutes = current.weatherRefreshMinutes
+            )
+        }
+    }
+
+    fun resetCustomSlotsToBlank() {
+        updateConfig { cfg ->
+            cfg.copy(
+                useCustomSlots = true,
+                customSlots = emptyMap()
+            )
+        }
+        _statusMessage.value = "Đã làm trống các vị trí khung — Chạm (+) để thêm lại thông tin"
+    }
+
+    fun fillSuggestedCustomSlots() {
+        val tier = _activeConfig.value.preferredSizeTier
+        val suggested = WidgetSlotBlueprints.suggestedSlotsForTier(tier)
+        updateConfig { cfg ->
+            cfg.copy(
+                useCustomSlots = true,
+                customSlots = suggested
+            )
+        }
+        _statusMessage.value = "Đã điền gợi ý chuẩn cho kích thước ${tier.gridLabel}"
     }
 
     fun applyPresetToCurrentSession(preset: GlassPreset) {

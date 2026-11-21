@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -46,6 +47,7 @@ import com.lumiglass.widgets.model.BatteryDisplayStyle
 import com.lumiglass.widgets.model.ClockFontStyle
 import com.lumiglass.widgets.model.ContentAlignmentOption
 import com.lumiglass.widgets.model.FontWeightOption
+import com.lumiglass.widgets.model.SlotContentType
 import com.lumiglass.widgets.model.TelemetryDisplayStyle
 import com.lumiglass.widgets.model.TemperatureSymbolStyle
 import com.lumiglass.widgets.model.WeatherDisplayStyle
@@ -53,6 +55,9 @@ import com.lumiglass.widgets.model.WidgetConfig
 import com.lumiglass.widgets.model.WidgetDataSnapshot
 import com.lumiglass.widgets.model.WidgetModuleType
 import com.lumiglass.widgets.model.WidgetSizeTier
+import com.lumiglass.widgets.model.WidgetSlotBlueprints
+import com.lumiglass.widgets.model.WidgetSlotDefinition
+import com.lumiglass.widgets.renderer.CustomSlotRenderer
 import com.lumiglass.widgets.renderer.GlassIconRenderer
 import com.lumiglass.widgets.renderer.GlassSurfaceRenderer
 
@@ -285,37 +290,59 @@ fun LiveWidgetGlassCard(
     snapshot: WidgetDataSnapshot,
     tier: WidgetSizeTier = config.preferredSizeTier,
     previewScale: Float = 1.0f,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    interactiveSlotEditMode: Boolean = false,
+    selectedSlotId: String? = null,
+    onSlotClick: ((WidgetSlotDefinition) -> Unit)? = null
 ) {
     val palette = GlassSurfaceRenderer.resolvePalette(config, snapshot.isSystemDarkTheme)
     val primaryColor = Color(palette.primaryTextArgb)
     val secondaryColor = Color(palette.secondaryTextArgb)
     val accentColor = Color(palette.accentTextArgb)
 
-    val (cardWidthDp, cardHeightDp) = when (tier) {
-        WidgetSizeTier.MINI_2X1 -> (160 * previewScale).dp to (72 * previewScale).dp
-        WidgetSizeTier.COMPACT_2X2 -> (160 * previewScale).dp to (160 * previewScale).dp
-        WidgetSizeTier.ESSENTIAL_4X2 -> (328 * previewScale).dp to (142 * previewScale).dp
-        WidgetSizeTier.PREMIUM_4X3 -> (328 * previewScale).dp to (212 * previewScale).dp
-        WidgetSizeTier.DASHBOARD_4X4 -> (328 * previewScale).dp to (284 * previewScale).dp
+    val renderAsCustomSlots = config.useCustomSlots || interactiveSlotEditMode
+
+    val (cardWidthDp, cardHeightDp) = if (interactiveSlotEditMode) {
+        when (tier) {
+            WidgetSizeTier.MINI_2X1 -> (230 * previewScale).dp to (96 * previewScale).dp
+            WidgetSizeTier.COMPACT_2X2 -> (204 * previewScale).dp to (204 * previewScale).dp
+            WidgetSizeTier.ESSENTIAL_4X2 -> (336 * previewScale).dp to (172 * previewScale).dp
+            WidgetSizeTier.PREMIUM_4X3 -> (336 * previewScale).dp to (242 * previewScale).dp
+            WidgetSizeTier.DASHBOARD_4X4 -> (336 * previewScale).dp to (308 * previewScale).dp
+        }
+    } else {
+        when (tier) {
+            WidgetSizeTier.MINI_2X1 -> (160 * previewScale).dp to (72 * previewScale).dp
+            WidgetSizeTier.COMPACT_2X2 -> (160 * previewScale).dp to (160 * previewScale).dp
+            WidgetSizeTier.ESSENTIAL_4X2 -> {
+                val h4x2 = if (config.telemetryDisplayStyle == TelemetryDisplayStyle.TRIO_GLASS_CARDS || renderAsCustomSlots) 166 else 144
+                (328 * previewScale).dp to (h4x2 * previewScale).dp
+            }
+            WidgetSizeTier.PREMIUM_4X3 -> (328 * previewScale).dp to (218 * previewScale).dp
+            WidgetSizeTier.DASHBOARD_4X4 -> (328 * previewScale).dp to (288 * previewScale).dp
+        }
     }
 
     val hasRightContent = config.showWeather || config.showLunarDate ||
         (config.batteryMonitoringEnabled && (config.showBatteryPercent || config.showBatteryTemp))
 
-    val dividerLayout = when (tier) {
-        WidgetSizeTier.ESSENTIAL_4X2 -> {
-            if ((config.showClock || config.showGregorianDate) && hasRightContent) {
-                GlassSurfaceRenderer.DividerZoneLayout.VERTICAL_SPLIT_4X2
-            } else GlassSurfaceRenderer.DividerZoneLayout.NONE
+    val dividerLayout = if (renderAsCustomSlots) {
+        GlassSurfaceRenderer.DividerZoneLayout.NONE
+    } else {
+        when (tier) {
+            WidgetSizeTier.ESSENTIAL_4X2 -> {
+                if ((config.showClock || config.showGregorianDate) && hasRightContent) {
+                    GlassSurfaceRenderer.DividerZoneLayout.VERTICAL_SPLIT_4X2
+                } else GlassSurfaceRenderer.DividerZoneLayout.NONE
+            }
+            WidgetSizeTier.PREMIUM_4X3 -> {
+                if (config.showWeather || (config.batteryMonitoringEnabled && (config.showBatteryPercent || config.showBatteryTemp))) {
+                    GlassSurfaceRenderer.DividerZoneLayout.PREMIUM_4X3
+                } else GlassSurfaceRenderer.DividerZoneLayout.NONE
+            }
+            WidgetSizeTier.DASHBOARD_4X4 -> GlassSurfaceRenderer.DividerZoneLayout.DASHBOARD_4X4
+            else -> GlassSurfaceRenderer.DividerZoneLayout.NONE
         }
-        WidgetSizeTier.PREMIUM_4X3 -> {
-            if (config.showWeather || (config.batteryMonitoringEnabled && (config.showBatteryPercent || config.showBatteryTemp))) {
-                GlassSurfaceRenderer.DividerZoneLayout.PREMIUM_4X3
-            } else GlassSurfaceRenderer.DividerZoneLayout.NONE
-        }
-        WidgetSizeTier.DASHBOARD_4X4 -> GlassSurfaceRenderer.DividerZoneLayout.DASHBOARD_4X4
-        else -> GlassSurfaceRenderer.DividerZoneLayout.NONE
     }
 
     val horizontalAlign = when (config.contentAlignment) {
@@ -346,6 +373,19 @@ fun LiveWidgetGlassCard(
                     dividerLayout = dividerLayout
                 )
             }
+        }
+
+        if (renderAsCustomSlots) {
+            LiveCustomSlotsGridOverlay(
+                config = config,
+                snapshot = snapshot,
+                tier = tier,
+                previewScale = previewScale,
+                interactiveEditMode = interactiveSlotEditMode,
+                selectedSlotId = selectedSlotId,
+                onSlotClick = onSlotClick
+            )
+            return@Box
         }
 
         // 2. Content Layer Sitting Directly on the Liquid Glass Surface
@@ -1316,9 +1356,9 @@ private fun PreviewTelemetryTrioCluster(
 ) {
     val density = LocalDensity.current.density
     val cardHeight = when (tier) {
-        WidgetSizeTier.PREMIUM_4X3 -> (76 * previewScale).dp
-        WidgetSizeTier.DASHBOARD_4X4 -> (80 * previewScale).dp
-        else -> (70 * previewScale).dp
+        WidgetSizeTier.PREMIUM_4X3 -> (66 * previewScale).dp
+        WidgetSizeTier.DASHBOARD_4X4 -> (72 * previewScale).dp
+        else -> (50 * previewScale).dp
     }
 
     Row(
@@ -1727,5 +1767,218 @@ private fun PreviewRamCluster(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
+    }
+}
+
+@Composable
+private fun LiveCustomSlotsGridOverlay(
+    config: WidgetConfig,
+    snapshot: WidgetDataSnapshot,
+    tier: WidgetSizeTier,
+    previewScale: Float,
+    interactiveEditMode: Boolean,
+    selectedSlotId: String?,
+    onSlotClick: ((WidgetSlotDefinition) -> Unit)?
+) {
+    val slots = WidgetSlotBlueprints.slotsForTier(tier)
+    fun defAt(index: Int): WidgetSlotDefinition = slots.getOrElse(index) { slots.first() }
+    val outerPad = (if (tier == WidgetSizeTier.MINI_2X1 || tier == WidgetSizeTier.COMPACT_2X2) 10 else 12) * previewScale
+    val gap = (5 * previewScale).dp
+
+    @Composable
+    fun Cell(def: WidgetSlotDefinition, modifier: Modifier) {
+        CustomSlotCellCanvas(
+            slotDef = def,
+            config = config,
+            snapshot = snapshot,
+            interactiveEditMode = interactiveEditMode,
+            isSelected = selectedSlotId == def.slotId,
+            onClick = { onSlotClick?.invoke(def) },
+            modifier = modifier
+        )
+    }
+
+    when (tier) {
+        WidgetSizeTier.MINI_2X1 -> {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(outerPad.dp),
+                horizontalArrangement = Arrangement.spacedBy(gap)
+            ) {
+                Cell(defAt(0), Modifier.weight(0.52f).fillMaxHeight())
+                Cell(defAt(1), Modifier.weight(0.48f).fillMaxHeight())
+            }
+        }
+
+        WidgetSizeTier.COMPACT_2X2 -> {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(outerPad.dp),
+                verticalArrangement = Arrangement.spacedBy(gap)
+            ) {
+                Cell(defAt(0), Modifier.fillMaxWidth().weight(0.50f))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(0.50f),
+                    horizontalArrangement = Arrangement.spacedBy(gap)
+                ) {
+                    Cell(defAt(1), Modifier.weight(1f).fillMaxHeight())
+                    Cell(defAt(2), Modifier.weight(1f).fillMaxHeight())
+                }
+            }
+        }
+
+        WidgetSizeTier.ESSENTIAL_4X2 -> {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(outerPad.dp),
+                verticalArrangement = Arrangement.spacedBy(gap)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(0.62f),
+                    horizontalArrangement = Arrangement.spacedBy(gap)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .weight(0.45f)
+                            .fillMaxHeight(),
+                        verticalArrangement = Arrangement.spacedBy(gap)
+                    ) {
+                        Cell(defAt(0), Modifier.fillMaxWidth().weight(0.62f))
+                        Cell(defAt(1), Modifier.fillMaxWidth().weight(0.38f))
+                    }
+                    Column(
+                        modifier = Modifier
+                            .weight(0.55f)
+                            .fillMaxHeight(),
+                        verticalArrangement = Arrangement.spacedBy(gap)
+                    ) {
+                        Cell(defAt(2), Modifier.fillMaxWidth().weight(0.42f))
+                        Cell(defAt(3), Modifier.fillMaxWidth().weight(0.58f))
+                    }
+                }
+                Cell(defAt(4), Modifier.fillMaxWidth().weight(0.38f))
+            }
+        }
+
+        WidgetSizeTier.PREMIUM_4X3 -> {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(outerPad.dp),
+                verticalArrangement = Arrangement.spacedBy(gap)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(0.35f),
+                    horizontalArrangement = Arrangement.spacedBy(gap)
+                ) {
+                    Cell(defAt(0), Modifier.weight(1f).fillMaxHeight())
+                    Cell(defAt(1), Modifier.weight(1f).fillMaxHeight())
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(0.35f),
+                    horizontalArrangement = Arrangement.spacedBy(gap)
+                ) {
+                    Cell(defAt(2), Modifier.weight(1f).fillMaxHeight())
+                    Cell(defAt(3), Modifier.weight(1f).fillMaxHeight())
+                    Cell(defAt(4), Modifier.weight(1f).fillMaxHeight())
+                }
+                Cell(defAt(5), Modifier.fillMaxWidth().weight(0.30f))
+            }
+        }
+
+        WidgetSizeTier.DASHBOARD_4X4 -> {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(outerPad.dp),
+                verticalArrangement = Arrangement.spacedBy(gap)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(0.26f),
+                    horizontalArrangement = Arrangement.spacedBy(gap)
+                ) {
+                    Cell(defAt(0), Modifier.weight(0.54f).fillMaxHeight())
+                    Cell(defAt(1), Modifier.weight(0.46f).fillMaxHeight())
+                }
+                Cell(defAt(2), Modifier.fillMaxWidth().weight(0.22f))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(0.28f),
+                    horizontalArrangement = Arrangement.spacedBy(gap)
+                ) {
+                    Cell(defAt(3), Modifier.weight(1f).fillMaxHeight())
+                    Cell(defAt(4), Modifier.weight(1f).fillMaxHeight())
+                    Cell(defAt(5), Modifier.weight(1f).fillMaxHeight())
+                }
+                Cell(defAt(6), Modifier.fillMaxWidth().weight(0.24f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun CustomSlotCellCanvas(
+    slotDef: WidgetSlotDefinition,
+    config: WidgetConfig,
+    snapshot: WidgetDataSnapshot,
+    interactiveEditMode: Boolean,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val contentType = WidgetSlotBlueprints.slotContent(config, slotDef.slotId)
+    val cellShape = RoundedCornerShape(13.dp)
+
+    Box(
+        modifier = modifier
+            .clip(cellShape)
+            .then(
+                when {
+                    isSelected && interactiveEditMode ->
+                        Modifier.border(1.8.dp, Color(0xFF38BDF8), cellShape)
+                    interactiveEditMode && contentType != SlotContentType.EMPTY ->
+                        Modifier.border(0.75.dp, Color.White.copy(alpha = 0.24f), cellShape)
+                    else -> Modifier
+                }
+            )
+            .then(
+                if (interactiveEditMode) {
+                    Modifier.clickable(onClick = onClick)
+                } else {
+                    Modifier
+                }
+            )
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            drawIntoCanvas { c ->
+                CustomSlotRenderer.drawSlotContent(
+                    canvas = c.nativeCanvas,
+                    w = size.width,
+                    h = size.height,
+                    density = density,
+                    contentType = contentType,
+                    config = config,
+                    snapshot = snapshot,
+                    isSystemDarkTheme = snapshot.isSystemDarkTheme,
+                    slotHintVi = slotDef.shortHintVi,
+                    showEmptyPlaceholder = interactiveEditMode,
+                    drawClockTextOnCanvas = true
+                )
+            }
+        }
     }
 }

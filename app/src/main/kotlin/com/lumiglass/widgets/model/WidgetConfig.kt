@@ -227,7 +227,7 @@ data class WidgetConfig(
     val batteryStyle: BatteryDisplayStyle = BatteryDisplayStyle.PILL,
     val colorBatteryByLevel: Boolean = true,
     val warnBatteryTempByColor: Boolean = true,
-    val telemetryDisplayStyle: TelemetryDisplayStyle = TelemetryDisplayStyle.TRIO_GLASS_CARDS,
+    val telemetryDisplayStyle: TelemetryDisplayStyle = TelemetryDisplayStyle.COMPACT_ROW,
     val dynamicAlertColors: Boolean = true,
     val storageDisplayStyle: StorageDisplayStyle = StorageDisplayStyle.PERCENT_AND_DETAIL,
     val ramDisplayStyle: RamDisplayStyle = RamDisplayStyle.PERCENT_AND_DETAIL,
@@ -264,5 +264,9 @@ data class WidgetConfig(
     val temperatureUnit: TemperatureUnit = TemperatureUnit.CELSIUS,
     val weatherRefreshMinutes: Int = 60,
     val batteryMonitoringEnabled: Boolean = true,
-    val timezoneMode: TimezoneMode = TimezoneMode.VIETNAM_UTC7
+    val timezoneMode: TimezoneMode = TimezoneMode.VIETNAM_UTC7,
+
+    // 5. Cá nhân hóa theo khung ô chuẩn (Slot-Based Custom Widget Builder)
+    val useCustomSlots: Boolean = false,
+    val customSlots: Map<String, SlotContentType> = emptyMap()
 )
