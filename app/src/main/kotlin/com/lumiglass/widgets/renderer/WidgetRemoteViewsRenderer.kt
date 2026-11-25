@@ -4,6 +4,7 @@ import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
+import android.graphics.Paint
 import android.graphics.Typeface
 import android.net.Uri
 import android.text.SpannableString
@@ -16,6 +17,7 @@ import android.view.View
 import android.widget.RemoteViews
 import com.lumiglass.widgets.MainActivity
 import com.lumiglass.widgets.R
+import com.lumiglass.widgets.model.CustomSlotBounds
 import com.lumiglass.widgets.model.ContentAlignmentOption
 import com.lumiglass.widgets.model.FontWeightOption
 import com.lumiglass.widgets.model.ResponsiveLayoutResolver
@@ -43,7 +45,10 @@ object WidgetRemoteViewsRenderer {
         widthDp: Int,
         heightDp: Int,
         config: WidgetConfig,
-        snapshot: WidgetDataSnapshot
+        snapshot: WidgetDataSnapshot,
+        preview: Boolean = false,
+        showEmptySlots: Boolean = false,
+        bitmapDensityLimit: Float = 2f
     ): RemoteViews {
         val metrics = ResponsiveLayoutResolver.resolve(
             widthDp = widthDp,
@@ -52,6 +57,7 @@ object WidgetRemoteViewsRenderer {
         )
         val tier = metrics.effectiveTier
         val density = context.resources.displayMetrics.density
+        val bitmapDensity = density.coerceAtMost(bitmapDensityLimit)
 
         if (config.useCustomSlots) {
             return buildCustomSlotsRemoteViews(
@@ -59,11 +65,12 @@ object WidgetRemoteViewsRenderer {
                 appWidgetId = appWidgetId,
                 widthDp = metrics.widthDp,
                 heightDp = metrics.heightDp,
-                scaleFactor = metrics.scaleFactor,
-                tier = tier,
-                density = density,
+                tier = config.preferredSizeTier,
+                density = bitmapDensity,
                 config = config,
-                snapshot = snapshot
+                snapshot = snapshot,
+                preview = preview,
+                showEmptySlots = showEmptySlots
             )
         }
 
@@ -78,36 +85,12 @@ object WidgetRemoteViewsRenderer {
         val views = RemoteViews(context.packageName, layoutResId)
         val palette = GlassSurfaceRenderer.resolvePalette(config, snapshot.isSystemDarkTheme)
 
-        val hasRightContent = config.showWeather || config.showLunarDate ||
-            (config.batteryMonitoringEnabled && (config.showBatteryPercent || config.showBatteryTemp))
-
-        val dividerMode = when (tier) {
-            WidgetSizeTier.ESSENTIAL_4X2 -> {
-                if ((config.showClock || config.showGregorianDate) && hasRightContent) {
-                    GlassSurfaceRenderer.DividerZoneLayout.VERTICAL_SPLIT_4X2
-                } else {
-                    GlassSurfaceRenderer.DividerZoneLayout.NONE
-                }
-            }
-            WidgetSizeTier.PREMIUM_4X3 -> {
-                if (config.showWeather || (config.batteryMonitoringEnabled && (config.showBatteryPercent || config.showBatteryTemp))) {
-                    GlassSurfaceRenderer.DividerZoneLayout.PREMIUM_4X3
-                } else {
-                    GlassSurfaceRenderer.DividerZoneLayout.NONE
-                }
-            }
-            WidgetSizeTier.DASHBOARD_4X4 -> GlassSurfaceRenderer.DividerZoneLayout.DASHBOARD_4X4
-            else -> GlassSurfaceRenderer.DividerZoneLayout.NONE
-        }
-
-        // 1. Render and bind the Liquid Glass surface bitmap
         val glassBitmap = GlassSurfaceRenderer.renderGlassBitmap(
             widthDp = metrics.widthDp,
             heightDp = metrics.heightDp,
-            density = density,
+            density = bitmapDensity,
             config = config,
-            isSystemDarkTheme = snapshot.isSystemDarkTheme,
-            drawInternalDividersForTier = dividerMode
+            isSystemDarkTheme = snapshot.isSystemDarkTheme
         )
         views.setImageViewBitmap(R.id.widget_glass_bg, glassBitmap)
 
@@ -120,6 +103,12 @@ object WidgetRemoteViewsRenderer {
             else -> horizPadPx
         }
         views.setViewPadding(R.id.widget_content_root, horizPadPx, vertPadPx, horizPadPx, vertPadPx)
+        val dense = metrics.heightDp < 130
+        val contentConfig = if (dense) config.copy(
+            showHumidity = false, showFeelsLike = false,
+            showHighLowTemp = false, showRainProbability = false,
+            splitClockTwoLines = config.splitClockTwoLines && metrics.heightDp >= 100
+        ) else config
 
         val gravity = when (config.contentAlignment) {
             ContentAlignmentOption.START -> Gravity.START or Gravity.CENTER_VERTICAL
@@ -132,10 +121,13 @@ object WidgetRemoteViewsRenderer {
 
         // 3. Configure Digital Clock (Native TextClock: 1-line or 2-line split)
         bindClockViews(
+            context = context,
             views = views,
             tier = tier,
             scaleFactor = metrics.scaleFactor,
-            config = config,
+            contentWidthDp = metrics.widthDp - 2 * metrics.contentPaddingDp,
+            contentHeightDp = metrics.heightDp - 2 * vertPadPx / density,
+            config = contentConfig,
             primaryTextArgb = palette.primaryTextArgb,
             accentTextArgb = palette.accentTextArgb
         )
@@ -158,7 +150,7 @@ object WidgetRemoteViewsRenderer {
             tier = tier,
             scaleFactor = metrics.scaleFactor,
             density = density,
-            config = config,
+            config = contentConfig,
             snapshot = snapshot,
             primaryTextArgb = palette.primaryTextArgb,
             secondaryTextArgb = palette.secondaryTextArgb
@@ -210,6 +202,8 @@ object WidgetRemoteViewsRenderer {
         )
 
         // 7. Attach Click PendingIntent to open Widget Studio for this specific appWidgetId
+        if (preview) return views
+
         val editIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
@@ -232,9 +226,12 @@ object WidgetRemoteViewsRenderer {
     }
 
     private fun bindClockViews(
+        context: Context,
         views: RemoteViews,
         tier: WidgetSizeTier,
         scaleFactor: Float,
+        contentWidthDp: Int,
+        contentHeightDp: Float,
         config: WidgetConfig,
         primaryTextArgb: Int,
         accentTextArgb: Int
@@ -260,6 +257,9 @@ object WidgetRemoteViewsRenderer {
             WidgetSizeTier.PREMIUM_4X3 -> 42f
             WidgetSizeTier.DASHBOARD_4X4 -> 46f
         } * combinedScale * secondsFactor
+        val halfWidth = tier == WidgetSizeTier.ESSENTIAL_4X2 || tier == WidgetSizeTier.PREMIUM_4X3
+        val clockWidth = if (halfWidth) contentWidthDp * .48f - 8f else contentWidthDp - 5f
+        val clockHeight = contentHeightDp * if (halfWidth || tier == WidgetSizeTier.DASHBOARD_4X4) .38f else .55f
 
         if (!config.splitClockTwoLines) {
             views.setViewVisibility(R.id.widget_clock_single, View.VISIBLE)
@@ -274,7 +274,8 @@ object WidgetRemoteViewsRenderer {
             views.setCharSequence(R.id.widget_clock_single, "setFormat24Hour", styledPattern)
             views.setCharSequence(R.id.widget_clock_single, "setFormat12Hour", styledPattern)
             views.setString(R.id.widget_clock_single, "setTimeZone", timeZoneId)
-            views.setTextViewTextSize(R.id.widget_clock_single, TypedValue.COMPLEX_UNIT_SP, baseSingleSp)
+            views.setTextViewTextSize(R.id.widget_clock_single, TypedValue.COMPLEX_UNIT_PX,
+                fittedClockPx(context, pattern, config, baseSingleSp, clockWidth, clockHeight))
             views.setTextColor(R.id.widget_clock_single, primaryTextArgb)
         } else {
             views.setViewVisibility(R.id.widget_clock_single, View.GONE)
@@ -287,15 +288,41 @@ object WidgetRemoteViewsRenderer {
             views.setCharSequence(R.id.widget_clock_split_hour, "setFormat24Hour", hourPattern)
             views.setCharSequence(R.id.widget_clock_split_hour, "setFormat12Hour", hourPattern)
             views.setString(R.id.widget_clock_split_hour, "setTimeZone", timeZoneId)
-            views.setTextViewTextSize(R.id.widget_clock_split_hour, TypedValue.COMPLEX_UNIT_SP, splitSp)
+            views.setTextViewTextSize(R.id.widget_clock_split_hour, TypedValue.COMPLEX_UNIT_PX,
+                fittedClockPx(context, "HH", config, splitSp, clockWidth, clockHeight * .60f))
             views.setTextColor(R.id.widget_clock_split_hour, primaryTextArgb)
 
             views.setCharSequence(R.id.widget_clock_split_minute, "setFormat24Hour", minPattern)
             views.setCharSequence(R.id.widget_clock_split_minute, "setFormat12Hour", minPattern)
             views.setString(R.id.widget_clock_split_minute, "setTimeZone", timeZoneId)
-            views.setTextViewTextSize(R.id.widget_clock_split_minute, TypedValue.COMPLEX_UNIT_SP, splitSp)
+            views.setTextViewTextSize(R.id.widget_clock_split_minute, TypedValue.COMPLEX_UNIT_PX,
+                fittedClockPx(context, if (config.showSeconds) "mm:ss" else "mm",
+                    config, splitSp, clockWidth, clockHeight * .60f))
             views.setTextColor(R.id.widget_clock_split_minute, accentTextArgb)
         }
+    }
+
+    private fun fittedClockPx(
+        context: Context,
+        pattern: String,
+        config: WidgetConfig,
+        targetSp: Float,
+        widthDp: Float,
+        heightDp: Float
+    ): Float {
+        val metrics = context.resources.displayMetrics
+        val sample = pattern.replace('H', '8').replace('h', '8')
+            .replace('m', '8').replace('s', '8').replace("a", "CH")
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = Typeface.create(config.fontStyle.androidFontFamily, Typeface.BOLD)
+            textSize = 100f
+        }
+        val measured = paint.fontMetrics
+        return minOf(
+            TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, targetSp, metrics),
+            widthDp.coerceAtLeast(1f) * metrics.density * 100f / paint.measureText(sample),
+            heightDp.coerceAtLeast(1f) * metrics.density * 100f / (measured.bottom - measured.top)
+        )
     }
 
     private fun bindDateAndLunarViews(
@@ -973,6 +1000,8 @@ object WidgetRemoteViewsRenderer {
         )
     }
 
+    fun customSlotContainerId(index: Int): Int = CUSTOM_SLOT_VIEW_IDS[index].containerId
+
     private data class CustomSlotViewIds(
         val slotId: String,
         val containerId: Int,
@@ -990,55 +1019,17 @@ object WidgetRemoteViewsRenderer {
         CustomSlotViewIds(WidgetSlotBlueprints.SLOT_6, R.id.custom_slot_6_container, R.id.custom_slot_6_bitmap, R.id.custom_slot_6_clock)
     )
 
-    private fun estimateSlotSizeDp(
-        tier: WidgetSizeTier,
-        slotId: String,
-        totalW: Int,
-        totalH: Int
-    ): Pair<Int, Int> {
-        val innerW = (totalW - 22).coerceAtLeast(80)
-        val innerH = (totalH - 22).coerceAtLeast(56)
-        return when (tier) {
-            WidgetSizeTier.MINI_2X1 -> when (slotId) {
-                WidgetSlotBlueprints.SLOT_0 -> (innerW * 0.50f).toInt() to innerH
-                else -> (innerW * 0.46f).toInt() to innerH
-            }
-            WidgetSizeTier.COMPACT_2X2 -> when (slotId) {
-                WidgetSlotBlueprints.SLOT_0 -> innerW to (innerH * 0.48f).toInt()
-                else -> (innerW * 0.48f).toInt() to (innerH * 0.48f).toInt()
-            }
-            WidgetSizeTier.ESSENTIAL_4X2 -> when (slotId) {
-                WidgetSlotBlueprints.SLOT_0 -> (innerW * 0.44f).toInt() to (innerH * 0.38f).toInt()
-                WidgetSlotBlueprints.SLOT_1 -> (innerW * 0.44f).toInt() to (innerH * 0.23f).toInt()
-                WidgetSlotBlueprints.SLOT_2 -> (innerW * 0.54f).toInt() to (innerH * 0.26f).toInt()
-                WidgetSlotBlueprints.SLOT_3 -> (innerW * 0.54f).toInt() to (innerH * 0.36f).toInt()
-                else -> innerW to (innerH * 0.37f).toInt()
-            }
-            WidgetSizeTier.PREMIUM_4X3 -> when (slotId) {
-                WidgetSlotBlueprints.SLOT_0, WidgetSlotBlueprints.SLOT_1 -> (innerW * 0.48f).toInt() to (innerH * 0.34f).toInt()
-                WidgetSlotBlueprints.SLOT_2, WidgetSlotBlueprints.SLOT_3, WidgetSlotBlueprints.SLOT_4 -> (innerW * 0.32f).toInt() to (innerH * 0.34f).toInt()
-                else -> innerW to (innerH * 0.29f).toInt()
-            }
-            WidgetSizeTier.DASHBOARD_4X4 -> when (slotId) {
-                WidgetSlotBlueprints.SLOT_0 -> (innerW * 0.53f).toInt() to (innerH * 0.25f).toInt()
-                WidgetSlotBlueprints.SLOT_1 -> (innerW * 0.45f).toInt() to (innerH * 0.25f).toInt()
-                WidgetSlotBlueprints.SLOT_2 -> innerW to (innerH * 0.21f).toInt()
-                WidgetSlotBlueprints.SLOT_3, WidgetSlotBlueprints.SLOT_4, WidgetSlotBlueprints.SLOT_5 -> (innerW * 0.32f).toInt() to (innerH * 0.27f).toInt()
-                else -> innerW to (innerH * 0.23f).toInt()
-            }
-        }
-    }
-
     private fun buildCustomSlotsRemoteViews(
         context: Context,
         appWidgetId: Int,
         widthDp: Int,
         heightDp: Int,
-        scaleFactor: Float,
         tier: WidgetSizeTier,
         density: Float,
         config: WidgetConfig,
-        snapshot: WidgetDataSnapshot
+        snapshot: WidgetDataSnapshot,
+        preview: Boolean,
+        showEmptySlots: Boolean
     ): RemoteViews {
         val layoutResId = when (tier) {
             WidgetSizeTier.MINI_2X1 -> R.layout.widget_custom_2x1
@@ -1069,39 +1060,40 @@ object WidgetRemoteViewsRenderer {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         val piFlags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        val defaultPendingIntent = PendingIntent.getActivity(
+        val defaultPendingIntent = if (preview) null else PendingIntent.getActivity(
             context,
             appWidgetId + 30_000,
             defaultEditIntent,
             piFlags
         )
-        views.setOnClickPendingIntent(R.id.widget_root, defaultPendingIntent)
+        if (!preview) views.setOnClickPendingIntent(R.id.widget_root, defaultPendingIntent)
 
         // 2. Bind each standardized slot for this tier
         val activeSlots = WidgetSlotBlueprints.slotsForTier(tier)
+        val bounds = CustomSlotBounds.forTier(tier, widthDp, heightDp)
         val tzId = if (config.timezoneMode == TimezoneMode.VIETNAM_UTC7) "Asia/Ho_Chi_Minh" else null
         val format24 = if (config.showSeconds) "HH:mm:ss" else "HH:mm"
-        val format12 = if (config.showSeconds) "hh:mm:ss" else "hh:mm"
+        val format12 = if (config.showSeconds) "hh:mm:ss a" else "hh:mm a"
 
         activeSlots.forEachIndexed { idx, slotDef ->
             val ids = CUSTOM_SLOT_VIEW_IDS.getOrNull(idx) ?: return@forEachIndexed
             val contentType = WidgetSlotBlueprints.slotContent(config, slotDef.slotId)
-            val (slotW, slotH) = estimateSlotSizeDp(tier, slotDef.slotId, widthDp, heightDp)
+            val (slotW, slotH) = bounds[idx]
 
             if (contentType == SlotContentType.CLOCK) {
                 views.setViewVisibility(ids.bitmapId, View.GONE)
                 views.setViewVisibility(ids.clockId, View.VISIBLE)
 
-                views.setCharSequence(ids.clockId, "setFormat24Hour", if (config.use24HourFormat) format24 else format12)
-                views.setCharSequence(ids.clockId, "setFormat12Hour", if (config.use24HourFormat) format24 else format12)
-                if (tzId != null) {
-                    views.setString(ids.clockId, "setTimeZone", tzId)
-                }
-                val baseSp = (kotlin.math.min(slotH * 0.56f, slotW * 0.30f) * scaleFactor * config.textScale * config.clockScale)
-                    .coerceIn(16f, 44f)
-                views.setTextViewTextSize(ids.clockId, TypedValue.COMPLEX_UNIT_SP, baseSp)
+                val pattern = if (config.use24HourFormat) format24 else format12
+                val styledPattern = applyTypographySpans(pattern, config)
+                views.setCharSequence(ids.clockId, "setFormat24Hour", styledPattern)
+                views.setCharSequence(ids.clockId, "setFormat12Hour", styledPattern)
+                views.setString(ids.clockId, "setTimeZone", tzId)
+                views.setTextViewTextSize(ids.clockId, TypedValue.COMPLEX_UNIT_PX,
+                    fittedClockPx(context, pattern, config, 42f * config.textScale * config.clockScale,
+                        (slotW - 10).toFloat(), (slotH - 6).toFloat()))
                 views.setTextColor(ids.clockId, palette.primaryTextArgb)
-            } else if (contentType == SlotContentType.EMPTY) {
+            } else if (contentType == SlotContentType.EMPTY && !showEmptySlots) {
                 views.setViewVisibility(ids.clockId, View.GONE)
                 views.setViewVisibility(ids.bitmapId, View.GONE)
             } else {
@@ -1116,12 +1108,13 @@ object WidgetRemoteViewsRenderer {
                     snapshot = snapshot,
                     isSystemDarkTheme = snapshot.isSystemDarkTheme,
                     slotHintVi = slotDef.shortHintVi,
-                    showEmptyPlaceholder = false,
+                    showEmptyPlaceholder = showEmptySlots,
                     drawClockTextOnCanvas = false
                 )
                 views.setImageViewBitmap(ids.bitmapId, bmp)
             }
 
+            if (preview) return@forEachIndexed
             // Contextual click target per module
             val slotPendingIntent = when (contentType) {
                 SlotContentType.WEATHER -> createWeatherAppPendingIntent(context, appWidgetId)

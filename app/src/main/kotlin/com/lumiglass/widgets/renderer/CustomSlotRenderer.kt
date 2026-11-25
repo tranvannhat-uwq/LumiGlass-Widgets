@@ -10,6 +10,8 @@ import android.graphics.Path
 import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.Typeface
+import android.text.TextPaint
+import android.text.TextUtils
 import androidx.core.graphics.ColorUtils
 import com.lumiglass.widgets.model.ClockFontStyle
 import com.lumiglass.widgets.model.SlotContentType
@@ -46,13 +48,13 @@ object CustomSlotRenderer {
         drawClockTextOnCanvas: Boolean = false
     ): Bitmap {
         val safeDensity = density.coerceIn(1.25f, 2.0f)
-        val rawW = (widthDp * safeDensity).toInt().coerceAtLeast(64)
-        val rawH = (heightDp * safeDensity).toInt().coerceAtLeast(48)
+        val rawW = (widthDp * safeDensity).toInt().coerceAtLeast(1)
+        val rawH = (heightDp * safeDensity).toInt().coerceAtLeast(1)
 
         val maxDim = max(rawW, rawH)
         val downscale = if (maxDim > 420) 420f / maxDim.toFloat() else 1f
-        val pxW = (rawW * downscale).toInt().coerceAtLeast(48)
-        val pxH = (rawH * downscale).toInt().coerceAtLeast(40)
+        val pxW = (rawW * downscale).toInt().coerceAtLeast(1)
+        val pxH = (rawH * downscale).toInt().coerceAtLeast(1)
         val effDensity = safeDensity * downscale
 
         val bitmap = Bitmap.createBitmap(pxW, pxH, Bitmap.Config.ARGB_8888)
@@ -89,42 +91,51 @@ object CustomSlotRenderer {
         if (w <= 4f || h <= 4f) return
         val palette = GlassSurfaceRenderer.resolvePalette(config, isSystemDarkTheme)
 
-        when (contentType) {
-            SlotContentType.EMPTY -> {
-                if (showEmptyPlaceholder) {
-                    drawEmptyPlusSlot(canvas, w, h, density, palette, slotHintVi)
+        val checkpoint = canvas.save()
+        val radius = min(12f * density, min(w, h) * .28f)
+        canvas.clipPath(Path().apply {
+            addRoundRect(RectF(0f, 0f, w, h), radius, radius, Path.Direction.CW)
+        })
+        try {
+            when (contentType) {
+                SlotContentType.EMPTY -> {
+                    if (showEmptyPlaceholder) {
+                        drawEmptyPlusSlot(canvas, w, h, density, palette, slotHintVi)
+                    }
+                }
+                SlotContentType.CLOCK -> {
+                    drawClockSlot(canvas, w, h, density, config, snapshot, palette, drawClockTextOnCanvas)
+                }
+                SlotContentType.GREGORIAN_DATE -> {
+                    drawGregorianDateSlot(canvas, w, h, density, config, snapshot, palette)
+                }
+                SlotContentType.LUNAR_DATE -> {
+                    drawLunarDateSlot(canvas, w, h, density, config, snapshot, palette)
+                }
+                SlotContentType.DATE_AND_LUNAR -> {
+                    drawDateAndLunarSlot(canvas, w, h, density, config, snapshot, palette)
+                }
+                SlotContentType.WEEK_CALENDAR -> {
+                    drawWeekCalendarSlot(canvas, w, h, density, config, snapshot, palette)
+                }
+                SlotContentType.WEATHER -> {
+                    drawWeatherSlot(canvas, w, h, density, config, snapshot, palette)
+                }
+                SlotContentType.BATTERY_WITH_TEMP -> {
+                    drawBatterySlot(canvas, w, h, density, config, snapshot, palette)
+                }
+                SlotContentType.STORAGE -> {
+                    drawStorageSlot(canvas, w, h, density, config, snapshot, palette)
+                }
+                SlotContentType.RAM -> {
+                    drawRamSlot(canvas, w, h, density, config, snapshot, palette)
+                }
+                SlotContentType.TELEMETRY_TRIO -> {
+                    drawTelemetryTrioSlot(canvas, w, h, density, config, snapshot)
                 }
             }
-            SlotContentType.CLOCK -> {
-                drawClockSlot(canvas, w, h, density, config, snapshot, palette, drawClockTextOnCanvas)
-            }
-            SlotContentType.GREGORIAN_DATE -> {
-                drawGregorianDateSlot(canvas, w, h, density, config, snapshot, palette)
-            }
-            SlotContentType.LUNAR_DATE -> {
-                drawLunarDateSlot(canvas, w, h, density, config, snapshot, palette)
-            }
-            SlotContentType.DATE_AND_LUNAR -> {
-                drawDateAndLunarSlot(canvas, w, h, density, config, snapshot, palette)
-            }
-            SlotContentType.WEEK_CALENDAR -> {
-                drawWeekCalendarSlot(canvas, w, h, density, config, snapshot, palette)
-            }
-            SlotContentType.WEATHER -> {
-                drawWeatherSlot(canvas, w, h, density, config, snapshot, palette)
-            }
-            SlotContentType.BATTERY_WITH_TEMP -> {
-                drawBatterySlot(canvas, w, h, density, config, snapshot, palette)
-            }
-            SlotContentType.STORAGE -> {
-                drawStorageSlot(canvas, w, h, density, config, snapshot, palette)
-            }
-            SlotContentType.RAM -> {
-                drawRamSlot(canvas, w, h, density, config, snapshot, palette)
-            }
-            SlotContentType.TELEMETRY_TRIO -> {
-                drawTelemetryTrioSlot(canvas, w, h, density, config, snapshot)
-            }
+        } finally {
+            canvas.restoreToCount(checkpoint)
         }
     }
 
@@ -264,7 +275,7 @@ object CustomSlotRenderer {
 
             val fm = hintPaint.fontMetrics
             val baseline = cy - (fm.ascent + fm.descent) * 0.5f
-            canvas.drawText(slotHintVi, startX + circleRadius * 2f + gap, baseline, hintPaint)
+            drawBoundedText(canvas, slotHintVi, startX + circleRadius * 2f + gap, baseline, hintPaint, w - (startX + circleRadius * 2f + gap) - 3f * density)
             return
         }
 
@@ -293,7 +304,7 @@ object CustomSlotRenderer {
             }
             val textY = (circleCy + circleRadius + hintPaint.textSize * 1.15f)
                 .coerceAtMost(h - 5f * density)
-            canvas.drawText(slotHintVi, cx, textY, hintPaint)
+            drawBoundedText(canvas, slotHintVi, cx, textY, hintPaint, w * .86f)
         }
     }
 
@@ -338,7 +349,7 @@ object CustomSlotRenderer {
         }
         val fm = clockPaint.fontMetrics
         val baseline = cy - (fm.ascent + fm.descent) * 0.5f
-        canvas.drawText(timeText, cx, baseline, clockPaint)
+        drawBoundedText(canvas, timeText, cx, baseline, clockPaint, w * .88f)
     }
 
     private fun drawGregorianDateSlot(
@@ -371,7 +382,7 @@ object CustomSlotRenderer {
             }
         }
         val fm = paint.fontMetrics
-        canvas.drawText(dateText, cx, cy - (fm.ascent + fm.descent) * 0.5f, paint)
+        drawBoundedText(canvas, dateText, cx, cy - (fm.ascent + fm.descent) * 0.5f, paint, w * .88f)
     }
 
     private fun drawLunarDateSlot(
@@ -425,11 +436,11 @@ object CustomSlotRenderer {
                     minSize = 6.8f * density
                 )
             }
-            canvas.drawText(line1, cx, h * 0.44f, p1)
-            canvas.drawText(line2, cx, h * 0.72f, p2)
+            drawBoundedText(canvas, line1, cx, h * 0.44f, p1, w * .88f)
+            drawBoundedText(canvas, line2, cx, h * 0.72f, p2, w * .88f)
         } else {
             val fm = p1.fontMetrics
-            canvas.drawText(line1, cx, h * 0.5f - (fm.ascent + fm.descent) * 0.5f, p1)
+            drawBoundedText(canvas, line1, cx, h * 0.5f - (fm.ascent + fm.descent) * 0.5f, p1, w * .88f)
         }
     }
 
@@ -477,8 +488,8 @@ object CustomSlotRenderer {
                 minSize = 6.8f * density
             )
         }
-        canvas.drawText(solar, cx, h * 0.43f, pSolar)
-        canvas.drawText(lunar, cx, h * 0.74f, pLunar)
+        drawBoundedText(canvas, solar, cx, h * 0.43f, pSolar, w * .88f)
+        drawBoundedText(canvas, lunar, cx, h * 0.74f, pLunar, w * .88f)
     }
 
     private fun drawWeekCalendarSlot(
@@ -494,7 +505,11 @@ object CustomSlotRenderer {
         if (allCols.size < 7) return
 
         val useSeven = config.weekCalendarDayCount >= 7 && w >= 190f * density
-        val cols = if (useSeven) allCols else allCols.subList(1, 6)
+        val cols = when {
+            useSeven -> allCols.take(7)
+            w >= 105f * density -> allCols.subList(1, 6)
+            else -> allCols.subList(2, 5)
+        }
         val colCount = cols.size
         val colW = w / colCount.toFloat()
 
@@ -572,9 +587,11 @@ object CustomSlotRenderer {
             }
 
             val boxH = botY - topY
-            canvas.drawText(weekdayStr, cx, topY + boxH * 0.28f, weekdayPaint)
-            canvas.drawText(col.solarDayString, cx, topY + boxH * 0.62f, solarPaint)
-            canvas.drawText(col.lunarDayMonthString, cx, topY + boxH * 0.88f, lunarPaint)
+            drawBoundedText(canvas, weekdayStr, cx, topY + boxH * 0.28f, weekdayPaint, colW * .86f)
+            drawBoundedText(canvas, col.solarDayString, cx, topY + boxH * 0.62f, solarPaint, colW * .86f)
+            if (config.showLunarDate && h >= 27f * density) {
+                drawBoundedText(canvas, col.lunarDayMonthString, cx, topY + boxH * 0.88f, lunarPaint, colW * .86f)
+            }
         }
     }
 
@@ -617,7 +634,7 @@ object CustomSlotRenderer {
 
             val textLeft = iconX + iconSize + 7f * density
             val availW = (w - textLeft - 7f * density).coerceAtLeast(24f)
-            val headline = "$condStr  $tempStr"
+            val headline = if (weather.hasData) "$tempStr  ·  $condStr" else condStr
 
             val headPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 textAlign = Paint.Align.LEFT
@@ -644,8 +661,8 @@ object CustomSlotRenderer {
                 )
             }
 
-            canvas.drawText(headline, textLeft, h * 0.45f, headPaint)
-            canvas.drawText(detailStr, textLeft, h * 0.76f, subPaint)
+            drawBoundedText(canvas, headline, textLeft, h * 0.45f, headPaint, w - textLeft - 6f * density)
+            drawBoundedText(canvas, detailStr, textLeft, h * 0.76f, subPaint, w - textLeft - 6f * density)
         } else {
             // Compact vertical weather card
             val cx = w * 0.5f
@@ -679,8 +696,8 @@ object CustomSlotRenderer {
                     minSize = 6.5f * density
                 )
             }
-            canvas.drawText(tempStr, cx, h * 0.66f, tempPaint)
-            canvas.drawText(condStr, cx, h * 0.86f, condPaint)
+            drawBoundedText(canvas, tempStr, cx, h * 0.66f, tempPaint, w * .86f)
+            drawBoundedText(canvas, condStr, cx, h * 0.86f, condPaint, w * .86f)
         }
     }
 
@@ -696,7 +713,7 @@ object CustomSlotRenderer {
         val battery = snapshot.batteryInfo
         if (w <= h * 1.65f) {
             // Vertical / Square neon glass Battery + Temp card
-            val u = min(w / 68f, h / 78f).coerceAtLeast(0.5f)
+            val u = min(w / 68f, h / 78f).coerceAtLeast(0.1f)
             GlassIconRenderer.drawBatteryTrioCard(
                 canvas = canvas,
                 w = w,
@@ -751,7 +768,7 @@ object CustomSlotRenderer {
                 textSize = (r * 0.62f).coerceAtLeast(8f * density)
             }
             val fm = pctP.fontMetrics
-            canvas.drawText("$pct%", arcCx, arcCy - (fm.ascent + fm.descent) * 0.5f, pctP)
+            drawBoundedText(canvas, "$pct%", arcCx, arcCy - (fm.ascent + fm.descent) * 0.5f, pctP, r * 1.65f)
 
             // Middle label + status
             val midLeft = arcCx + r + 10f * density
@@ -769,8 +786,8 @@ object CustomSlotRenderer {
                 typeface = resolveTypeface(config.fontStyle, bold = true)
                 textSize = min(h * 0.25f, 11f * density)
             }
-            canvas.drawText(statusStr, midLeft, h * 0.44f, titleP)
-            canvas.drawText(tempStr, midLeft, h * 0.74f, tempP)
+            drawBoundedText(canvas, statusStr, midLeft, h * 0.44f, titleP, w - midLeft - 6f * density)
+            drawBoundedText(canvas, tempStr, midLeft, h * 0.74f, tempP, w - midLeft - 6f * density)
         }
     }
 
@@ -785,7 +802,7 @@ object CustomSlotRenderer {
     ) {
         val storage = snapshot.storageInfo
         if (w <= h * 1.65f) {
-            val u = min(w / 68f, h / 78f).coerceAtLeast(0.5f)
+            val u = min(w / 68f, h / 78f).coerceAtLeast(0.1f)
             GlassIconRenderer.drawStorageTrioCard(
                 canvas = canvas,
                 w = w,
@@ -825,7 +842,7 @@ object CustomSlotRenderer {
     ) {
         val ram = snapshot.ramInfo
         if (w <= h * 1.65f) {
-            val u = min(w / 68f, h / 78f).coerceAtLeast(0.5f)
+            val u = min(w / 68f, h / 78f).coerceAtLeast(0.1f)
             GlassIconRenderer.drawRamTrioCard(
                 canvas = canvas,
                 w = w,
@@ -889,8 +906,8 @@ object CustomSlotRenderer {
             textSize = min(h * 0.20f, 9f * density)
         }
 
-        canvas.drawText(title, padX, h * 0.40f, titleP)
-        canvas.drawText("$pct%", w - padX, h * 0.42f, pctP)
+        drawBoundedText(canvas, title, padX, h * 0.40f, titleP, w * .52f - padX)
+        drawBoundedText(canvas, "$pct%", w - padX, h * 0.42f, pctP, w * .46f - padX)
 
         val barH = (4.5f * density).coerceAtMost(h * 0.14f)
         val barTop = h * 0.62f
@@ -917,7 +934,7 @@ object CustomSlotRenderer {
         canvas.drawRoundRect(fillRect, corner, corner, fillP)
 
         if (h >= 44f * density) {
-            canvas.drawText(detail, w - padX, h * 0.90f, detailP)
+            drawBoundedText(canvas, detail, w - padX, h * 0.90f, detailP, w - 2f * padX)
         }
     }
 
@@ -930,8 +947,8 @@ object CustomSlotRenderer {
         snapshot: WidgetDataSnapshot
     ) {
         val gap = (3.5f * density).coerceAtMost(w * 0.03f)
-        val cardW = ((w - gap * 2f) / 3f).coerceAtLeast(16f)
-        val u = min(cardW / 68f, h / 78f).coerceAtLeast(0.45f)
+        val cardW = (w - gap * 2f) / 3f
+        val u = min(cardW / 68f, h / 78f).coerceAtLeast(0.1f)
 
         // Card 1: Battery + Temp
         canvas.save()
@@ -970,6 +987,13 @@ object CustomSlotRenderer {
             density = u
         )
         canvas.restore()
+    }
+
+    private fun drawBoundedText(canvas: Canvas, text: String, x: Float, y: Float, paint: Paint, width: Float) {
+        if (width <= 0f || text.isBlank()) return
+        val bounded = if (paint.measureText(text) <= width) text else
+            TextUtils.ellipsize(text, TextPaint(paint), width, TextUtils.TruncateAt.END).toString()
+        canvas.drawText(bounded, x, y, paint)
     }
 
     private fun fitTextSize(

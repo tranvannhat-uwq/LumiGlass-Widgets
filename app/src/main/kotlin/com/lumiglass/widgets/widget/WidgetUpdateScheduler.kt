@@ -9,6 +9,10 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
+import android.util.SizeF
+import android.util.Log
+import android.net.Uri
+import android.widget.RemoteViews
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -23,10 +27,14 @@ import com.lumiglass.widgets.data.weather.WeatherRepository
 import com.lumiglass.widgets.model.WidgetConfig
 import com.lumiglass.widgets.model.WidgetDataSnapshot
 import com.lumiglass.widgets.model.WidgetSizeTier
+import com.lumiglass.widgets.model.SlotContentType
 import com.lumiglass.widgets.renderer.WidgetRemoteViewsRenderer
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.concurrent.TimeUnit
+import java.util.UUID
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 data class ActiveWidgetSummary(
     val appWidgetId: Int,
@@ -110,7 +118,10 @@ object WidgetUpdateScheduler {
         val lunarDate = DateTimeRepository.getCurrentLunarDate(zdt)
 
         val weatherRepo = WeatherRepository(context)
-        val weatherInfo = if (!config.showWeather) {
+        val needsWeather = if (config.useCustomSlots) {
+            SlotContentType.WEATHER in config.customSlots.values
+        } else config.showWeather
+        val weatherInfo = if (!needsWeather) {
             weatherRepo.getCachedWeatherOnly(config.cityId, config.useCoarseLocation)
         } else if (cacheOnlyWeather) {
             weatherRepo.getCachedWeatherOnly(config.cityId, config.useCoarseLocation)
@@ -159,7 +170,8 @@ object WidgetUpdateScheduler {
         appWidgetId: Int,
         fallbackTier: WidgetSizeTier = WidgetSizeTier.ESSENTIAL_4X2,
         forceWeatherNetwork: Boolean = false,
-        cacheOnlyForResize: Boolean = false
+        cacheOnlyForResize: Boolean = false,
+        reportFailure: Boolean = false
     ) {
         if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) return
         val manager = AppWidgetManager.getInstance(context)
@@ -167,8 +179,6 @@ object WidgetUpdateScheduler {
         val config = configRepo.getWidgetConfig(appWidgetId, fallbackTier)
 
         val options = runCatching { manager.getAppWidgetOptions(appWidgetId) }.getOrNull()
-        val (widthDp, heightDp) = extractBoundsDp(options, config.preferredSizeTier)
-
         val snapshot = buildSnapshotForConfig(
             context = context,
             config = config,
@@ -176,16 +186,30 @@ object WidgetUpdateScheduler {
             cacheOnlyWeather = cacheOnlyForResize
         )
 
-        val remoteViews = WidgetRemoteViewsRenderer.buildRemoteViews(
-            context = context,
-            appWidgetId = appWidgetId,
-            widthDp = widthDp,
-            heightDp = heightDp,
-            config = config,
-            snapshot = snapshot
-        )
-        runCatching {
-            manager.updateAppWidget(appWidgetId, remoteViews)
+        fun render(widthDp: Int, heightDp: Int, multipleSizes: Boolean = false) =
+            WidgetRemoteViewsRenderer.buildRemoteViews(
+                context, appWidgetId, widthDp, heightDp, config, snapshot,
+                bitmapDensityLimit = if (multipleSizes) 1.25f else 2f
+            )
+
+        val sizes = hostSizes(options)
+        val (portraitW, portraitH) = extractBoundsDp(options, config.preferredSizeTier)
+        val landscapeW = options?.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH) ?: 0
+        val landscapeH = options?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT) ?: 0
+        val views = when {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && sizes.size > 1 ->
+                RemoteViews(sizes.associateWith { render(it.width.toInt(), it.height.toInt(), true) })
+            sizes.isNotEmpty() -> render(sizes.first().width.toInt(), sizes.first().height.toInt())
+            landscapeW > 40 && landscapeH > 36 &&
+                (landscapeW != portraitW || landscapeH != portraitH) ->
+                RemoteViews(render(landscapeW, landscapeH, true), render(portraitW, portraitH, true))
+            else -> render(portraitW, portraitH)
+        }
+        try {
+            manager.updateAppWidget(appWidgetId, views)
+        } catch (error: RuntimeException) {
+            if (reportFailure) throw error
+            Log.w("WidgetUpdateScheduler", "Launcher rejected update for widget $appWidgetId", error)
         }
     }
 
@@ -214,19 +238,22 @@ object WidgetUpdateScheduler {
      */
     fun requestPinWidgetToHomeScreen(
         context: Context,
-        tier: WidgetSizeTier
+        tier: WidgetSizeTier,
+        config: WidgetConfig
     ): Boolean {
         val manager = AppWidgetManager.getInstance(context)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && manager.isRequestPinAppWidgetSupported) {
             val provider = providerComponentForTier(context, tier)
-            val callbackIntent = Intent(context, SystemEventReceiver::class.java).apply {
+            val callbackIntent = Intent(context, WidgetPinnedReceiver::class.java).apply {
                 action = ACTION_WIDGET_PINNED_CALLBACK
+                data = Uri.fromParts("lumiglass", UUID.randomUUID().toString(), null)
+                putExtra(WidgetPinnedReceiver.EXTRA_CONFIG, Json.encodeToString(config))
             }
             val successCallback = PendingIntent.getBroadcast(
                 context,
                 tier.ordinal + 500,
                 callbackIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_MUTABLE
             )
             return runCatching {
                 manager.requestPinAppWidget(provider, null, successCallback)
@@ -298,11 +325,23 @@ object WidgetUpdateScheduler {
 
     private fun extractBoundsDp(options: Bundle?, fallbackTier: WidgetSizeTier): Pair<Int, Int> {
         if (options == null) return fallbackTier.defaultWidthDp to fallbackTier.defaultHeightDp
+        hostSizes(options).firstOrNull()?.let { return it.width.toInt() to it.height.toInt() }
         val minW = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0)
-        val minH = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0)
+        val minH = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 0)
+            .takeIf { it > 36 } ?: options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0)
         val w = if (minW > 40) minW else fallbackTier.defaultWidthDp
         val h = if (minH > 36) minH else fallbackTier.defaultHeightDp
         return w to h
+    }
+
+    @Suppress("DEPRECATION")
+    private fun hostSizes(options: Bundle?): List<SizeF> {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return emptyList()
+        val sizes = options?.getParcelableArrayList<SizeF>(AppWidgetManager.OPTION_APPWIDGET_SIZES)
+            .orEmpty().filter { it.width > 40f && it.height > 36f }.distinct()
+        if (sizes.size <= 2) return sizes
+        val sorted = sizes.sortedBy { it.width * it.height }
+        return listOf(sorted.first(), sorted.last())
     }
 }
 

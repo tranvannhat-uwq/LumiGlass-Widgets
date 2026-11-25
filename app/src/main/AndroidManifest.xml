@@ -101,6 +101,8 @@
                 android:resource="@xml/widget_info_4x4" />
         </receiver>
 
+        <receiver android:name=".widget.WidgetPinnedReceiver" android:exported="false" />
+
         <!-- System Events Receiver (Boot, Time/Date/Timezone, Midnight Rollover, Power Events) -->
         <receiver
             android:name=".widget.SystemEventReceiver"

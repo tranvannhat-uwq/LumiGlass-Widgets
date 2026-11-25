@@ -1,5 +1,6 @@
 package com.lumiglass.widgets.model
 
+import com.lumiglass.widgets.model.SlotContentType.*
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -11,8 +12,68 @@ data class GlassPreset(
     val descriptionVi: String,
     val categoryTag: String,
     val isCustomUserPreset: Boolean = false,
-    val defaultConfig: WidgetConfig
-)
+    val defaultConfig: WidgetConfig,
+    val recipe: WidgetRecipe? = null
+) {
+    fun configForTier(tier: WidgetSizeTier): WidgetConfig = defaultConfig.copy(
+        preferredSizeTier = tier,
+        customSlots = when {
+            recipe != null -> recipe.slots(tier)
+            defaultConfig.useCustomSlots && tier != defaultConfig.preferredSizeTier ->
+                WidgetSlotBlueprints.remapSlotsForTier(defaultConfig.customSlots, tier)
+            else -> defaultConfig.customSlots
+        }
+    )
+}
+
+@Serializable
+enum class WidgetRecipe {
+    FOCUS, ALMANAC, FORECAST, VITALS, DAILY, WEEK;
+
+    fun slots(tier: WidgetSizeTier): Map<String, SlotContentType> {
+        val slots = when (this) {
+                FOCUS -> when (tier) {
+                    WidgetSizeTier.MINI_2X1 -> listOf(CLOCK, GREGORIAN_DATE)
+                    WidgetSizeTier.COMPACT_2X2 -> listOf(CLOCK, GREGORIAN_DATE, LUNAR_DATE)
+                    WidgetSizeTier.ESSENTIAL_4X2 -> listOf(CLOCK, GREGORIAN_DATE, DATE_AND_LUNAR, EMPTY, WEEK_CALENDAR)
+                    WidgetSizeTier.PREMIUM_4X3 -> listOf(CLOCK, DATE_AND_LUNAR, EMPTY, EMPTY, EMPTY, WEEK_CALENDAR)
+                    WidgetSizeTier.DASHBOARD_4X4 -> listOf(CLOCK, DATE_AND_LUNAR, GREGORIAN_DATE, EMPTY, EMPTY, EMPTY, WEEK_CALENDAR)
+                }
+                ALMANAC -> when (tier) {
+                    WidgetSizeTier.MINI_2X1 -> listOf(GREGORIAN_DATE, LUNAR_DATE)
+                    WidgetSizeTier.COMPACT_2X2 -> listOf(WEEK_CALENDAR, GREGORIAN_DATE, LUNAR_DATE)
+                    WidgetSizeTier.ESSENTIAL_4X2 -> listOf(GREGORIAN_DATE, LUNAR_DATE, EMPTY, DATE_AND_LUNAR, WEEK_CALENDAR)
+                    WidgetSizeTier.PREMIUM_4X3 -> listOf(CLOCK, DATE_AND_LUNAR, GREGORIAN_DATE, LUNAR_DATE, EMPTY, WEEK_CALENDAR)
+                    WidgetSizeTier.DASHBOARD_4X4 -> listOf(CLOCK, LUNAR_DATE, GREGORIAN_DATE, EMPTY, EMPTY, EMPTY, WEEK_CALENDAR)
+                }
+                FORECAST -> when (tier) {
+                    WidgetSizeTier.MINI_2X1 -> listOf(WEATHER, CLOCK)
+                    WidgetSizeTier.COMPACT_2X2 -> listOf(WEATHER, CLOCK, GREGORIAN_DATE)
+                    WidgetSizeTier.ESSENTIAL_4X2 -> listOf(CLOCK, GREGORIAN_DATE, EMPTY, DATE_AND_LUNAR, WEATHER)
+                    WidgetSizeTier.PREMIUM_4X3 -> listOf(WEATHER, CLOCK, GREGORIAN_DATE, LUNAR_DATE, EMPTY, WEEK_CALENDAR)
+                    WidgetSizeTier.DASHBOARD_4X4 -> listOf(CLOCK, DATE_AND_LUNAR, WEATHER, EMPTY, EMPTY, EMPTY, WEEK_CALENDAR)
+                }
+                VITALS -> when (tier) {
+                    WidgetSizeTier.MINI_2X1 -> listOf(BATTERY_WITH_TEMP, STORAGE)
+                    WidgetSizeTier.COMPACT_2X2 -> listOf(BATTERY_WITH_TEMP, STORAGE, RAM)
+                    WidgetSizeTier.ESSENTIAL_4X2 -> listOf(CLOCK, GREGORIAN_DATE, BATTERY_WITH_TEMP, STORAGE, TELEMETRY_TRIO)
+                    WidgetSizeTier.PREMIUM_4X3 -> listOf(CLOCK, GREGORIAN_DATE, BATTERY_WITH_TEMP, STORAGE, RAM, DATE_AND_LUNAR)
+                    WidgetSizeTier.DASHBOARD_4X4 -> listOf(CLOCK, DATE_AND_LUNAR, GREGORIAN_DATE, BATTERY_WITH_TEMP, STORAGE, RAM, WEEK_CALENDAR)
+                }
+                DAILY -> return WidgetSlotBlueprints.suggestedSlotsForTier(tier)
+                WEEK -> when (tier) {
+                    WidgetSizeTier.MINI_2X1 -> listOf(CLOCK, WEEK_CALENDAR)
+                    WidgetSizeTier.COMPACT_2X2 -> listOf(WEEK_CALENDAR, CLOCK, WEATHER)
+                    WidgetSizeTier.ESSENTIAL_4X2 -> listOf(CLOCK, LUNAR_DATE, GREGORIAN_DATE, WEATHER, WEEK_CALENDAR)
+                    WidgetSizeTier.PREMIUM_4X3 -> listOf(CLOCK, DATE_AND_LUNAR, WEATHER, BATTERY_WITH_TEMP, STORAGE, WEEK_CALENDAR)
+                    WidgetSizeTier.DASHBOARD_4X4 -> listOf(CLOCK, DATE_AND_LUNAR, WEATHER, BATTERY_WITH_TEMP, STORAGE, RAM, WEEK_CALENDAR)
+                }
+        }
+        return WidgetSlotBlueprints.slotsForTier(tier).zip(slots)
+            .filter { (_, content) -> content != SlotContentType.EMPTY }
+            .associate { (slot, content) -> slot.slotId to content }
+    }
+}
 
 object OfficialGlassPresets {
 
@@ -258,7 +319,63 @@ object OfficialGlassPresets {
         )
     )
 
-    val ALL: List<GlassPreset> = listOf(
+    private fun collectionPreset(
+        recipe: WidgetRecipe,
+        name: String,
+        category: String,
+        description: String,
+        tint: Long,
+        shade: Long,
+        accent: Long,
+        theme: GlassThemeMode
+    ): GlassPreset {
+        val id = "collection_${recipe.name.lowercase()}"
+        val tier = WidgetSizeTier.ESSENTIAL_4X2
+        return GlassPreset(
+            id = id,
+            codeNumber = (recipe.ordinal + 8).toString().padStart(2, '0'),
+            name = name,
+            subtitleVi = category,
+            descriptionVi = description,
+            categoryTag = category,
+            recipe = recipe,
+            defaultConfig = createBlankCustomConfig(tier).copy(
+                presetId = id,
+                presetName = name,
+                themeMode = theme,
+                glassTintColorHex = tint,
+                glassSecondaryTintHex = shade,
+                borderColorHex = accent,
+                glassOpacity = .84f,
+                frostAmount = .12f,
+                borderLuminance = .3f,
+                highlightIntensity = .2f,
+                refractionIntensity = .15f,
+                shadowIntensity = .15f,
+                textGlowEnabled = false,
+                textShadowEnabled = false,
+                showLunarDate = true,
+                customSlots = recipe.slots(tier)
+            )
+        )
+    }
+
+    private val collections = listOf(
+        collectionPreset(WidgetRecipe.FOCUS, "Đồng hồ Sương", "Đồng hồ",
+            "Giờ và ngày trên nền ngà dịu mắt.", 0xFFF6F4ECL, 0xFFDADFDAL, 0xFF90A99BL, GlassThemeMode.LIGHT),
+        collectionPreset(WidgetRecipe.FORECAST, "Bầu trời Lam", "Thời tiết",
+            "Xem nhiệt độ, tình trạng trời và dự báo mưa.", 0xFF12324AL, 0xFF0B1B34L, 0xFF83DFFFL, GlassThemeMode.DARK),
+        collectionPreset(WidgetRecipe.ALMANAC, "Lịch Ngọc", "Lịch",
+            "Ngày âm, ngày dương và lịch tuần Việt Nam.", 0xFFE1F3E8L, 0xFFB9DCD1L, 0xFF3E9E82L, GlassThemeMode.LIGHT),
+        collectionPreset(WidgetRecipe.VITALS, "Mạch Năng Lượng", "Thiết bị",
+            "Theo dõi pin, nhiệt độ, lưu trữ và RAM.", 0xFF201B33L, 0xFF110F21L, 0xFFBAA6FFL, GlassThemeMode.DARK),
+        collectionPreset(WidgetRecipe.DAILY, "Bento Hằng Ngày", "Tổng hợp",
+            "Gom giờ, thời tiết và thông tin thiết bị vào các ô dễ đọc.", 0xFF223139L, 0xFF16262BL, 0xFFA9EDC7L, GlassThemeMode.DARK),
+        collectionPreset(WidgetRecipe.WEEK, "Tuần Hổ Phách", "Lịch",
+            "Lịch tuần, giờ và thời tiết trong bảng màu ấm.", 0xFFFFECD2L, 0xFFFFD8BAL, 0xFFB36540L, GlassThemeMode.LIGHT)
+    )
+
+    val ALL: List<GlassPreset> = collections + listOf(
         CRYSTAL_CLEAR,
         AURORA_GLASS,
         MIDNIGHT_GLASS,

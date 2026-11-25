@@ -3,6 +3,7 @@ package com.lumiglass.widgets.ui.studio
 import android.app.Application
 import android.appwidget.AppWidgetManager
 import android.content.res.Configuration
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.lumiglass.widgets.data.battery.BatteryRepository
@@ -29,6 +30,8 @@ import com.lumiglass.widgets.model.WidgetSlotBlueprints
 import com.lumiglass.widgets.ui.components.SimulatedWallpaper
 import com.lumiglass.widgets.widget.ActiveWidgetSummary
 import com.lumiglass.widgets.widget.WidgetUpdateScheduler
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -137,8 +140,8 @@ class WidgetStudioViewModel(application: Application) : AndroidViewModel(applica
 
     init {
         viewModelScope.launch {
-            val draft = configRepo.getStudioDraft()
-            if (_editingAppWidgetId.value == AppWidgetManager.INVALID_APPWIDGET_ID) {
+            val draft = configRepo.getStudioDraft().copy(appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID)
+            if (!draftWasEdited && _editingAppWidgetId.value == AppWidgetManager.INVALID_APPWIDGET_ID) {
                 _activeConfig.value = draft
             }
             refreshBatteryTelemetry()
@@ -219,14 +222,20 @@ class WidgetStudioViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
+    private var loadWidgetJob: Job? = null
+    private var draftWasEdited = false
+
     fun loadWidgetForEditing(
         appWidgetId: Int,
-        fallbackTier: WidgetSizeTier = WidgetSizeTier.ESSENTIAL_4X2
+        fallbackTier: WidgetSizeTier = WidgetSizeTier.ESSENTIAL_4X2,
+        onLoaded: ((WidgetConfig) -> Unit)? = null
     ) {
+        loadWidgetJob?.cancel()
         _editingAppWidgetId.value = appWidgetId
-        viewModelScope.launch {
+        loadWidgetJob = viewModelScope.launch {
             val loaded = configRepo.getWidgetConfig(appWidgetId, fallbackTier)
             _activeConfig.value = loaded
+            onLoaded?.invoke(loaded)
             fetchWeatherForCurrentConfig(forceNetwork = false)
         }
     }
@@ -244,12 +253,14 @@ class WidgetStudioViewModel(application: Application) : AndroidViewModel(applica
         opacityOverride: Float? = null,
         preserveWidgetId: Boolean = false
     ) {
+        loadWidgetJob?.cancel()
+        draftWasEdited = true
         val targetId = if (preserveWidgetId) _editingAppWidgetId.value else AppWidgetManager.INVALID_APPWIDGET_ID
         if (!preserveWidgetId) {
             _editingAppWidgetId.value = AppWidgetManager.INVALID_APPWIDGET_ID
         }
         val current = _activeConfig.value
-        _activeConfig.value = preset.defaultConfig.copy(
+        _activeConfig.value = preset.configForTier(sizeTier).copy(
             appWidgetId = targetId,
             preferredSizeTier = sizeTier,
             glassOpacity = opacityOverride ?: preset.defaultConfig.glassOpacity,
@@ -258,9 +269,7 @@ class WidgetStudioViewModel(application: Application) : AndroidViewModel(applica
             temperatureUnit = current.temperatureUnit,
             weatherRefreshMinutes = current.weatherRefreshMinutes
         )
-        viewModelScope.launch {
-            configRepo.saveStudioDraft(_activeConfig.value)
-        }
+        fetchWeatherForCurrentConfig(forceNetwork = false)
     }
 
     fun usePresetDirectly(
@@ -287,6 +296,8 @@ class WidgetStudioViewModel(application: Application) : AndroidViewModel(applica
         sizeTier: WidgetSizeTier = _activeConfig.value.preferredSizeTier,
         preserveWidgetId: Boolean = false
     ) {
+        loadWidgetJob?.cancel()
+        draftWasEdited = true
         val targetId = if (preserveWidgetId) _editingAppWidgetId.value else AppWidgetManager.INVALID_APPWIDGET_ID
         if (!preserveWidgetId) {
             _editingAppWidgetId.value = AppWidgetManager.INVALID_APPWIDGET_ID
@@ -300,19 +311,6 @@ class WidgetStudioViewModel(application: Application) : AndroidViewModel(applica
             weatherRefreshMinutes = current.weatherRefreshMinutes
         )
         _statusMessage.value = "Khung kính trống ${sizeTier.gridLabel} đã sẵn sàng — Chạm dấu (+) để thêm thông tin"
-    }
-
-    fun ensureCustomBuilderModeIfEmpty() {
-        val current = _activeConfig.value
-        if (!current.useCustomSlots) {
-            _activeConfig.value = OfficialGlassPresets.createBlankCustomConfig(current.preferredSizeTier).copy(
-                appWidgetId = current.appWidgetId,
-                cityId = current.cityId,
-                useCoarseLocation = current.useCoarseLocation,
-                temperatureUnit = current.temperatureUnit,
-                weatherRefreshMinutes = current.weatherRefreshMinutes
-            )
-        }
     }
 
     fun resetCustomSlotsToBlank() {
@@ -338,20 +336,29 @@ class WidgetStudioViewModel(application: Application) : AndroidViewModel(applica
     }
 
     fun applyPresetToCurrentSession(preset: GlassPreset) {
-        val current = _activeConfig.value
-        val updated = preset.defaultConfig.copy(
-            appWidgetId = current.appWidgetId,
-            preferredSizeTier = current.preferredSizeTier,
-            cityId = current.cityId,
-            useCoarseLocation = current.useCoarseLocation,
-            temperatureUnit = current.temperatureUnit,
-            weatherRefreshMinutes = current.weatherRefreshMinutes
-        )
-        _activeConfig.value = updated
-        _statusMessage.value = "Đã chọn mẫu kính ${preset.name}"
+        val style = preset.defaultConfig
+        updateConfig {
+            it.copy(
+                glassTintColorHex = style.glassTintColorHex,
+                glassSecondaryTintHex = style.glassSecondaryTintHex,
+                borderColorHex = style.borderColorHex,
+                glassOpacity = style.glassOpacity,
+                frostAmount = style.frostAmount,
+                borderLuminance = style.borderLuminance,
+                cornerRadiusDp = style.cornerRadiusDp,
+                shadowIntensity = style.shadowIntensity,
+                highlightIntensity = style.highlightIntensity,
+                refractionIntensity = style.refractionIntensity,
+                themeMode = style.themeMode,
+                autoTextColor = style.autoTextColor,
+                customTextColorHex = style.customTextColorHex
+            )
+        }
+        _statusMessage.value = "Đã đổi màu kính sang ${preset.name}"
     }
 
     fun updateConfig(transform: (WidgetConfig) -> WidgetConfig) {
+        draftWasEdited = true
         val prev = _activeConfig.value
         val next = transform(prev)
         _activeConfig.value = next
@@ -379,12 +386,14 @@ class WidgetStudioViewModel(application: Application) : AndroidViewModel(applica
     fun resetToPresetDefault() {
         val current = _activeConfig.value
         val preset = allPresets.value.firstOrNull { it.id == current.presetId }
-            ?: OfficialGlassPresets.CRYSTAL_CLEAR
-        _activeConfig.value = preset.defaultConfig.copy(
+        val defaults = preset?.configForTier(current.preferredSizeTier)
+            ?: if (current.useCustomSlots) OfficialGlassPresets.createBlankCustomConfig(current.preferredSizeTier)
+            else OfficialGlassPresets.CRYSTAL_CLEAR.configForTier(current.preferredSizeTier)
+        _activeConfig.value = defaults.copy(
             appWidgetId = current.appWidgetId,
-            preferredSizeTier = current.preferredSizeTier
+            customSlots = if (current.useCustomSlots && preset == null) current.customSlots else defaults.customSlots
         )
-        _statusMessage.value = "Đã khôi phục mặc định mẫu ${preset.name}"
+        _statusMessage.value = "Đã khôi phục thiết lập mặc định."
     }
 
     fun fetchWeatherForCurrentConfig(forceNetwork: Boolean) {
@@ -414,46 +423,46 @@ class WidgetStudioViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
+    private var saveJob: Job? = null
+
     fun saveAndApplyToWidget(onAppliedComplete: ((Int) -> Unit)? = null) {
-        viewModelScope.launch {
+        if (saveJob?.isActive == true) return
+        saveJob = viewModelScope.launch {
             val targetId = _editingAppWidgetId.value
             val cfg = _activeConfig.value.copy(appWidgetId = targetId)
+            if (_activeConfig.value.appWidgetId != targetId) return@launch
 
-            if (targetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
-                configRepo.saveWidgetConfig(targetId, cfg)
-                WidgetUpdateScheduler.updateSingleWidgetNow(
-                    context = appContext,
-                    appWidgetId = targetId,
-                    fallbackTier = cfg.preferredSizeTier,
-                    forceWeatherNetwork = false
-                )
-                _statusMessage.value = "Đã lưu & áp dụng lên Widget #$targetId"
-            } else {
-                configRepo.saveStudioDraft(cfg)
-                val activeList = WidgetUpdateScheduler.getAllActiveWidgetSummaries(appContext)
-                for (w in activeList) {
-                    configRepo.saveWidgetConfig(
-                        w.appWidgetId,
-                        cfg.copy(appWidgetId = w.appWidgetId, preferredSizeTier = w.providerTier)
+            try {
+                if (targetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+                    configRepo.saveWidgetConfig(targetId, cfg)
+                    WidgetUpdateScheduler.updateSingleWidgetNow(
+                        context = appContext,
+                        appWidgetId = targetId,
+                        fallbackTier = cfg.preferredSizeTier,
+                        cacheOnlyForResize = true,
+                        reportFailure = true
                     )
-                }
-                WidgetUpdateScheduler.updateAllActiveWidgets(appContext, forceWeatherNetwork = false)
-                _statusMessage.value = if (activeList.isNotEmpty()) {
-                    "Đã lưu & áp dụng cho ${activeList.size} widget trên màn hình chính"
+                    _statusMessage.value = "Đã áp dụng cho widget #$targetId."
                 } else {
-                    "Đã lưu cấu hình mẫu. Nhấn 'Thêm vào màn hình chính' để đặt widget."
+                    configRepo.saveStudioDraft(cfg)
+                    _statusMessage.value = "Đã lưu bản nháp. Chọn Ghim widget để thêm vào màn hình chính."
                 }
+                refreshActiveWidgetsList()
+                onAppliedComplete?.invoke(targetId)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                Log.e("WidgetStudio", "Unable to apply widget configuration", error)
+                _statusMessage.value = "Không thể áp dụng widget. Vui lòng thử lại."
             }
-            refreshActiveWidgetsList()
-            onAppliedComplete?.invoke(targetId)
         }
     }
 
     fun requestPinToHomeScreen(tier: WidgetSizeTier = _activeConfig.value.preferredSizeTier) {
         viewModelScope.launch {
-            val cfg = _activeConfig.value.copy(preferredSizeTier = tier)
+            val cfg = _activeConfig.value.copy(appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID, preferredSizeTier = tier)
             configRepo.saveStudioDraft(cfg)
-            val pinned = WidgetUpdateScheduler.requestPinWidgetToHomeScreen(appContext, tier)
+            val pinned = WidgetUpdateScheduler.requestPinWidgetToHomeScreen(appContext, tier, cfg)
             _statusMessage.value = if (pinned) {
                 "Đã gửi yêu cầu ghim Widget ${tier.gridLabel} (${tier.titleVi}) ra màn hình chính!"
             } else {

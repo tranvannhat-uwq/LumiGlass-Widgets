@@ -95,7 +95,6 @@ import com.lumiglass.widgets.model.TimezoneMode
 import com.lumiglass.widgets.model.WeatherDisplayStyle
 import com.lumiglass.widgets.model.WidgetConfig
 import com.lumiglass.widgets.model.WidgetDataSnapshot
-import com.lumiglass.widgets.model.WidgetLayoutVariant
 import com.lumiglass.widgets.model.WidgetModuleType
 import com.lumiglass.widgets.ui.components.SimulatedWallpaper
 import com.lumiglass.widgets.ui.components.WallpaperStageWidgetPreview
@@ -225,152 +224,157 @@ fun WidgetStudioScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // 1. Sleek Single-Line Header & Compact Live Preview Stage
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 4.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+            // 1. Sleek Single-Line Header & Compact Live Preview Stage
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 4.dp)
             ) {
-                Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
-                    Text(
-                        text = if (editingAppWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
-                            "Studio • Widget #$editingAppWidgetId"
-                        } else {
-                            "Studio • ${config.presetName}"
-                        },
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = "${config.preferredSizeTier.gridLabel} ${config.preferredSizeTier.titleVi} • Độ trong ${100 - (config.glassOpacity * 100).roundToInt()}%",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(
-                        onClick = { showSavePresetDialog = true },
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.BookmarkAdd,
-                            contentDescription = "Lưu Preset cá nhân",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
+                    Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                        Text(
+                            text = if (editingAppWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+                                "Studio • Widget #$editingAppWidgetId"
+                            } else {
+                                "Studio • ${config.presetName}"
+                            },
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = "${config.preferredSizeTier.gridLabel} ${config.preferredSizeTier.titleVi} • Độ trong ${100 - (config.glassOpacity * 100).roundToInt()}%",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
-                    IconButton(
-                        onClick = onResetDefault,
-                        modifier = Modifier.size(36.dp)
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.RestartAlt,
-                            contentDescription = "Khôi phục mặc định",
-                            modifier = Modifier.size(20.dp)
-                        )
+                        IconButton(
+                            onClick = { showSavePresetDialog = true },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.BookmarkAdd,
+                                contentDescription = "Lưu Preset cá nhân",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        IconButton(
+                            onClick = onResetDefault,
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.RestartAlt,
+                                contentDescription = "Khôi phục mặc định",
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                WallpaperStageWidgetPreview(
+                    config = config,
+                    snapshot = snapshot,
+                    wallpaper = simulatedWallpaper,
+                    onWallpaperChange = onWallpaperChange,
+                    onSizeTierChange = if (editingAppWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) null else { newTier ->
+                        onUpdateConfig {
+                            if (it.useCustomSlots) {
+                                it.copy(
+                                    preferredSizeTier = newTier,
+                                    customSlots = com.lumiglass.widgets.model.WidgetSlotBlueprints.remapSlotsForTier(it.customSlots, newTier)
+                                )
+                            } else {
+                                it.copy(preferredSizeTier = newTier)
+                            }
+                        }
+                    },
+                    isCompact = true
+                )
+            }
+
+            val availableTabs = if (config.useCustomSlots) StudioTab.entries.filter { it != StudioTab.ELEMENTS } else StudioTab.entries
+            val currentTab = StudioTab.entries[selectedTabIndex].takeIf { it in availableTabs } ?: StudioTab.APPEARANCE
+
+            // 2. Slim Compact Studio Section Tabs
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 14.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                availableTabs.forEach { tab ->
+                    LiquidMaterialChip(
+                        text = tab.titleVi,
+                        icon = tab.icon,
+                        isSelected = currentTab == tab,
+                        horizontalPadding = 10.dp,
+                        verticalPadding = 5.dp,
+                        onClick = { selectedTabIndex = tab.ordinal }
+                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
-
-            WallpaperStageWidgetPreview(
-                config = config,
-                snapshot = snapshot,
-                wallpaper = simulatedWallpaper,
-                onWallpaperChange = onWallpaperChange,
-                onSizeTierChange = { newTier ->
-                    onUpdateConfig {
-                        if (it.useCustomSlots) {
-                            it.copy(
-                                preferredSizeTier = newTier,
-                                customSlots = com.lumiglass.widgets.model.WidgetSlotBlueprints.remapSlotsForTier(it.customSlots, newTier)
-                            )
-                        } else {
-                            it.copy(preferredSizeTier = newTier)
-                        }
-                    }
-                },
-                isCompact = true
+            HorizontalDivider(
+                thickness = 0.6.dp,
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)
             )
-        }
 
-        // 2. Slim Compact Studio Section Tabs
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 14.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            StudioTab.entries.forEachIndexed { index, tab ->
-                LiquidMaterialChip(
-                    text = tab.titleVi,
-                    icon = tab.icon,
-                    isSelected = selectedTabIndex == index,
-                    horizontalPadding = 10.dp,
-                    verticalPadding = 5.dp,
-                    onClick = { selectedTabIndex = index }
-                )
-            }
-        }
-
-        HorizontalDivider(
-            thickness = 0.6.dp,
-            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)
-        )
-
-        // 3. Spacious Scrollable Editor Controls Pane
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 14.dp, vertical = 10.dp)
-        ) {
-            when (StudioTab.entries[selectedTabIndex]) {
-                StudioTab.APPEARANCE -> AppearanceTabContent(
-                    config = config,
-                    allPresets = allPresets,
-                    onSelectPreset = onSelectPreset,
-                    onUpdateConfig = onUpdateConfig
-                )
-                StudioTab.CONTENT -> ContentTabContent(
-                    config = config,
-                    onUpdateConfig = onUpdateConfig,
-                    onMoveModuleOrder = onMoveModuleOrder
-                )
-                StudioTab.ELEMENTS -> ElementsTabContent(
-                    config = config,
-                    onUpdateConfig = onUpdateConfig
-                )
-                StudioTab.TYPOGRAPHY -> TypographyTabContent(
-                    config = config,
-                    onUpdateConfig = onUpdateConfig
-                )
-                StudioTab.DATA -> DataTabContent(
-                    config = config,
-                    snapshot = snapshot,
-                    isRefreshingWeather = isRefreshingWeather,
-                    onUpdateConfig = onUpdateConfig,
-                    onRequestLocationPermission = {
-                        locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
-                    },
-                    onRefreshWeatherNow = onRefreshWeatherNow
-                )
+            // 3. Spacious Scrollable Editor Controls Pane
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
+            ) {
+                when (currentTab) {
+                    StudioTab.APPEARANCE -> AppearanceTabContent(
+                        config = config,
+                        allPresets = allPresets,
+                        onSelectPreset = onSelectPreset,
+                        onUpdateConfig = onUpdateConfig
+                    )
+                    StudioTab.CONTENT -> if (config.useCustomSlots) {
+                        SlotFormatControls(config, onUpdateConfig)
+                    } else ContentTabContent(
+                        config = config,
+                        onUpdateConfig = onUpdateConfig,
+                        onMoveModuleOrder = onMoveModuleOrder
+                    )
+                    StudioTab.ELEMENTS -> ElementsTabContent(
+                        config = config,
+                        onUpdateConfig = onUpdateConfig
+                    )
+                    StudioTab.TYPOGRAPHY -> TypographyTabContent(
+                        config = config,
+                        onUpdateConfig = onUpdateConfig
+                    )
+                    StudioTab.DATA -> DataTabContent(
+                        config = config,
+                        snapshot = snapshot,
+                        isRefreshingWeather = isRefreshingWeather,
+                        onUpdateConfig = onUpdateConfig,
+                        onRequestLocationPermission = {
+                            locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+                        },
+                        onRefreshWeatherNow = onRefreshWeatherNow
+                    )
+                }
             }
         }
 
@@ -415,7 +419,7 @@ fun WidgetStudioScreen(
                         } else if (editingAppWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
                             "Áp dụng #$editingAppWidgetId"
                         } else {
-                            "Áp dụng"
+                            "Lưu bản nháp"
                         },
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
@@ -425,7 +429,7 @@ fun WidgetStudioScreen(
                     )
                 }
 
-                if (!isLauncherConfigureMode) {
+                if (!isLauncherConfigureMode && editingAppWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
                     LiquidGlassButton(
                         onClick = onPinToHomeScreen,
                         modifier = Modifier.weight(1f),
@@ -893,26 +897,6 @@ private fun ContentTabContent(
             checked = config.showWeatherCardBackground,
             onCheckedChange = { v -> onUpdateConfig { it.copy(showWeatherCardBackground = v) } }
         )
-        StudioSwitchRow(
-            title = "Hiển thị ghim vị trí (VD: '📍 Hải Phòng')",
-            checked = config.showLocationPin,
-            onCheckedChange = { v -> onUpdateConfig { it.copy(showLocationPin = v) } }
-        )
-        StudioSwitchRow(
-            title = "Hiển thị nhãn thiết bị (VD: '● Honor GT')",
-            checked = config.showDeviceTag,
-            onCheckedChange = { v -> onUpdateConfig { it.copy(showDeviceTag = v) } }
-        )
-        if (config.showDeviceTag) {
-            OutlinedTextField(
-                value = config.deviceTagText,
-                onValueChange = { newTag -> onUpdateConfig { it.copy(deviceTagText = newTag) } },
-                label = { Text("Tên nhãn thiết bị (VD: Honor GT)") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-
         Text(
             text = "Các chỉ số phụ khác:",
             style = MaterialTheme.typography.labelLarge,
@@ -1074,21 +1058,39 @@ private fun ContentTabContent(
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
-        // Layout Variants
-        StudioSectionTitle("Phong cách bố cục (Layout Variant)")
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            WidgetLayoutVariant.entries.forEach { variant ->
-                FilterChip(
-                    selected = config.layoutVariant == variant,
-                    onClick = { onUpdateConfig { it.copy(layoutVariant = variant) } },
-                    label = { Text(variant.labelVi) },
-                    modifier = Modifier.heightIn(min = 34.dp)
-                )
+
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SlotFormatControls(config: WidgetConfig, onUpdateConfig: ((WidgetConfig) -> WidgetConfig) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        StudioSectionTitle("Định dạng các ô thông tin")
+        if (com.lumiglass.widgets.model.SlotContentType.CLOCK in config.customSlots.values) {
+            StudioSwitchRow("Đồng hồ 24 giờ", config.use24HourFormat) { value ->
+                onUpdateConfig { it.copy(use24HourFormat = value) }
+            }
+            StudioSwitchRow("Hiện giây", config.showSeconds) { value ->
+                onUpdateConfig { it.copy(showSeconds = value) }
             }
         }
+        if (com.lumiglass.widgets.model.SlotContentType.WEEK_CALENDAR in config.customSlots.values) {
+            StudioSwitchRow("Hiện âm lịch trong dải tuần", config.showLunarDate) { value ->
+                onUpdateConfig { it.copy(showLunarDate = value) }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(5, 7).forEach { days ->
+                    FilterChip(
+                        selected = config.weekCalendarDayCount == days,
+                        onClick = { onUpdateConfig { it.copy(weekCalendarDayCount = days) } },
+                        label = { Text("$days ngày") }
+                    )
+                }
+            }
+        }
+        Text("Để thêm, xóa hoặc đổi ô, quay lại màn hình Thiết kế.",
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -1097,8 +1099,8 @@ private enum class CustomElement(
     val icon: ImageVector,
     val descriptionVi: String
 ) {
-    CLOCK("Đồng hồ", Icons.Default.AutoAwesome, "Kích thước số giờ/phút, vị trí lên/xuống và căn lề"),
-    DATE("Ngày tháng", Icons.Default.FormatSize, "Kích thước ngày dương, âm lịch và căn lề"),
+    CLOCK("Đồng hồ", Icons.Default.AutoAwesome, "Kích thước số giờ và phút"),
+    DATE("Ngày tháng", Icons.Default.FormatSize, "Kích thước ngày dương và âm lịch"),
     WEATHER("Thời tiết", Icons.Default.CloudSync, "Kích thước nhiệt độ, biểu tượng thời tiết"),
     BATTERY("Pin thiết bị", Icons.Default.Layers, "Kích thước viên pin, % pin và nhiệt độ"),
     RAM("Bộ nhớ RAM", Icons.Default.RestartAlt, "Kích thước thông tin RAM và mức tiêu thụ"),
@@ -1114,9 +1116,9 @@ private fun ElementsTabContent(
     var selectedElement by rememberSaveable { mutableStateOf(CustomElement.CLOCK) }
 
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        StudioSectionTitle("Tùy biến kích thước & vị trí từng thành phần riêng")
+        StudioSectionTitle("Kích thước từng thành phần")
         Text(
-            text = "Chọn từng thông tin bên dưới để điều chỉnh kích thước riêng, căn lề và dịch chuyển vị trí lên/xuống theo ý bạn mà không ảnh hưởng tới thành phần khác.",
+            text = "Chọn một thành phần và thay đổi kích thước chữ trong vùng hiển thị của nó.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -1264,83 +1266,6 @@ private fun ElementsTabContent(
                     }
                 )
 
-                // Vertical Offset Y Slider (for elements that can shift up/down)
-                if (selectedElement != CustomElement.CALENDAR_STRIP) {
-                    val currentOffset = when (selectedElement) {
-                        CustomElement.CLOCK -> config.clockOffsetY
-                        CustomElement.DATE -> config.dateOffsetY
-                        CustomElement.WEATHER -> config.weatherOffsetY
-                        CustomElement.BATTERY -> config.batteryOffsetY
-                        CustomElement.RAM -> config.ramOffsetY
-                        CustomElement.CALENDAR_STRIP -> 0
-                    }
-
-                    StudioSliderControl(
-                        title = "Vị trí dọc (Offset Y: Lên / Xuống)",
-                        valueText = when {
-                            currentOffset < 0 -> "${-currentOffset} dp (Dịch lên)"
-                            currentOffset > 0 -> "+$currentOffset dp (Dịch xuống)"
-                            else -> "0 dp (Chuẩn)"
-                        },
-                        value = currentOffset.toFloat(),
-                        valueRange = -20f..20f,
-                        onValueChange = { newOffset ->
-                            val offInt = newOffset.roundToInt()
-                            onUpdateConfig { cfg ->
-                                when (selectedElement) {
-                                    CustomElement.CLOCK -> cfg.copy(clockOffsetY = offInt)
-                                    CustomElement.DATE -> cfg.copy(dateOffsetY = offInt)
-                                    CustomElement.WEATHER -> cfg.copy(weatherOffsetY = offInt)
-                                    CustomElement.BATTERY -> cfg.copy(batteryOffsetY = offInt)
-                                    CustomElement.RAM -> cfg.copy(ramOffsetY = offInt)
-                                    CustomElement.CALENDAR_STRIP -> cfg
-                                }
-                            }
-                        }
-                    )
-
-                    // Alignment Selector
-                    val currentAlignment = when (selectedElement) {
-                        CustomElement.CLOCK -> config.clockAlignment
-                        CustomElement.DATE -> config.dateAlignment
-                        CustomElement.WEATHER -> config.weatherAlignment
-                        CustomElement.BATTERY -> config.batteryAlignment
-                        CustomElement.RAM -> config.ramAlignment
-                        CustomElement.CALENDAR_STRIP -> ContentAlignmentOption.START
-                    }
-
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = "Căn lề riêng (Alignment)",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            ContentAlignmentOption.entries.forEach { align ->
-                                val selected = currentAlignment == align
-                                FilterChip(
-                                    selected = selected,
-                                    onClick = {
-                                        onUpdateConfig { cfg ->
-                                            when (selectedElement) {
-                                                CustomElement.CLOCK -> cfg.copy(clockAlignment = align)
-                                                CustomElement.DATE -> cfg.copy(dateAlignment = align)
-                                                CustomElement.WEATHER -> cfg.copy(weatherAlignment = align)
-                                                CustomElement.BATTERY -> cfg.copy(batteryAlignment = align)
-                                                CustomElement.RAM -> cfg.copy(ramAlignment = align)
-                                                CustomElement.CALENDAR_STRIP -> cfg
-                                            }
-                                        }
-                                    },
-                                    label = { Text(align.labelVi) },
-                                    modifier = Modifier.heightIn(min = 40.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-
                 // Reset this element button
                 OutlinedButton(
                     onClick = {
@@ -1419,26 +1344,6 @@ private fun TypographyTabContent(
             onValueChange = { v -> onUpdateConfig { it.copy(textScale = v) } }
         )
 
-        StudioSliderControl(
-            title = "Khoảng cách giữa các ký tự (Letter Spacing)",
-            valueText = String.format(java.util.Locale.US, "%.2f em", config.letterSpacingEm),
-            value = config.letterSpacingEm,
-            valueRange = -0.02f..0.12f,
-            onValueChange = { v -> onUpdateConfig { it.copy(letterSpacingEm = v) } }
-        )
-
-        // Text Glow & Shadow
-        StudioSectionTitle("Hiệu ứng quang học cho chữ trên mặt kính")
-        StudioSwitchRow(
-            title = "Hiệu ứng chữ phát sáng mềm (Soft Luminous Glow)",
-            checked = config.textGlowEnabled,
-            onCheckedChange = { v -> onUpdateConfig { it.copy(textGlowEnabled = v) } }
-        )
-        StudioSwitchRow(
-            title = "Đổ bóng chữ tăng độ nổi khối (Crisp Drop Shadow)",
-            checked = config.textShadowEnabled,
-            onCheckedChange = { v -> onUpdateConfig { it.copy(textShadowEnabled = v) } }
-        )
         StudioSwitchRow(
             title = "Tự động bảo đảm độ tương phản dễ đọc",
             checked = config.autoContrastEnsure,
@@ -1505,19 +1410,21 @@ private fun TypographyTabContent(
             onValueChange = { v -> onUpdateConfig { it.copy(iconScale = v) } }
         )
 
-        // Alignment
-        StudioSectionTitle("Căn chỉnh nội dung (Alignment)")
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            ContentAlignmentOption.entries.forEach { align ->
-                FilterChip(
-                    selected = config.contentAlignment == align,
-                    onClick = { onUpdateConfig { it.copy(contentAlignment = align) } },
-                    label = { Text(align.labelVi) },
-                    modifier = Modifier.heightIn(min = 34.dp)
-                )
+        if (!config.useCustomSlots && config.preferredSizeTier.cellsWidth == 2) {
+            // Alignment
+            StudioSectionTitle("Căn chỉnh nội dung (Alignment)")
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                ContentAlignmentOption.entries.forEach { align ->
+                    FilterChip(
+                        selected = config.contentAlignment == align,
+                        onClick = { onUpdateConfig { it.copy(contentAlignment = align) } },
+                        label = { Text(align.labelVi) },
+                        modifier = Modifier.heightIn(min = 34.dp)
+                    )
+                }
             }
         }
     }
