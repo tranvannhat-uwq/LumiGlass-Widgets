@@ -59,6 +59,10 @@
                     android:textSize="38sp"
                     android:textStyle="bold"
                     android:visibility="gone" />
+
+                <include
+                    android:id="@+id/custom_slot_0_calendar"
+                    layout="@layout/widget_custom_calendar_host" />
             </FrameLayout>
 
             <FrameLayout
@@ -91,6 +95,10 @@
                     android:textSize="32sp"
                     android:textStyle="bold"
                     android:visibility="gone" />
+
+                <include
+                    android:id="@+id/custom_slot_1_calendar"
+                    layout="@layout/widget_custom_calendar_host" />
             </FrameLayout>
         </LinearLayout>
 
@@ -125,6 +133,10 @@
                 android:textSize="30sp"
                 android:textStyle="bold"
                 android:visibility="gone" />
+
+            <include
+                android:id="@+id/custom_slot_2_calendar"
+                layout="@layout/widget_custom_calendar_host" />
         </FrameLayout>
 
         <!-- Row 3 (28%): 3 Equal System Cards (slot_3, slot_4, slot_5) -->
@@ -167,6 +179,10 @@
                     android:textSize="24sp"
                     android:textStyle="bold"
                     android:visibility="gone" />
+
+                <include
+                    android:id="@+id/custom_slot_3_calendar"
+                    layout="@layout/widget_custom_calendar_host" />
             </FrameLayout>
 
             <FrameLayout
@@ -200,6 +216,10 @@
                     android:textSize="24sp"
                     android:textStyle="bold"
                     android:visibility="gone" />
+
+                <include
+                    android:id="@+id/custom_slot_4_calendar"
+                    layout="@layout/widget_custom_calendar_host" />
             </FrameLayout>
 
             <FrameLayout
@@ -232,6 +252,10 @@
                     android:textSize="24sp"
                     android:textStyle="bold"
                     android:visibility="gone" />
+
+                <include
+                    android:id="@+id/custom_slot_5_calendar"
+                    layout="@layout/widget_custom_calendar_host" />
             </FrameLayout>
         </LinearLayout>
 
@@ -265,6 +289,10 @@
                 android:textSize="28sp"
                 android:textStyle="bold"
                 android:visibility="gone" />
+
+            <include
+                android:id="@+id/custom_slot_6_calendar"
+                layout="@layout/widget_custom_calendar_host" />
         </FrameLayout>
     </LinearLayout>
 </FrameLayout>

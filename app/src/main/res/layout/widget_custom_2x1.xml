@@ -50,6 +50,10 @@
                 android:textSize="28sp"
                 android:textStyle="bold"
                 android:visibility="gone" />
+
+            <include
+                android:id="@+id/custom_slot_0_calendar"
+                layout="@layout/widget_custom_calendar_host" />
         </FrameLayout>
 
         <FrameLayout
@@ -82,6 +86,10 @@
                 android:textSize="26sp"
                 android:textStyle="bold"
                 android:visibility="gone" />
+
+            <include
+                android:id="@+id/custom_slot_1_calendar"
+                layout="@layout/widget_custom_calendar_host" />
         </FrameLayout>
     </LinearLayout>
 </FrameLayout>

@@ -50,6 +50,10 @@
                 android:textSize="34sp"
                 android:textStyle="bold"
                 android:visibility="gone" />
+
+            <include
+                android:id="@+id/custom_slot_0_calendar"
+                layout="@layout/widget_custom_calendar_host" />
         </FrameLayout>
 
         <!-- Row 2 (50%): 2 Equal Bottom Cards -->
@@ -92,6 +96,10 @@
                     android:textSize="22sp"
                     android:textStyle="bold"
                     android:visibility="gone" />
+
+                <include
+                    android:id="@+id/custom_slot_1_calendar"
+                    layout="@layout/widget_custom_calendar_host" />
             </FrameLayout>
 
             <FrameLayout
@@ -124,6 +132,10 @@
                     android:textSize="22sp"
                     android:textStyle="bold"
                     android:visibility="gone" />
+
+                <include
+                    android:id="@+id/custom_slot_2_calendar"
+                    layout="@layout/widget_custom_calendar_host" />
             </FrameLayout>
         </LinearLayout>
     </LinearLayout>

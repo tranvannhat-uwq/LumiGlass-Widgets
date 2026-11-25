@@ -115,9 +115,7 @@ object CustomSlotRenderer {
                 SlotContentType.DATE_AND_LUNAR -> {
                     drawDateAndLunarSlot(canvas, w, h, density, config, snapshot, palette)
                 }
-                SlotContentType.WEEK_CALENDAR -> {
-                    drawWeekCalendarSlot(canvas, w, h, density, config, snapshot, palette)
-                }
+                SlotContentType.WEEK_CALENDAR -> Unit // Rendered by native TextViews.
                 SlotContentType.WEATHER -> {
                     drawWeatherSlot(canvas, w, h, density, config, snapshot, palette)
                 }
@@ -490,109 +488,6 @@ object CustomSlotRenderer {
         }
         drawBoundedText(canvas, solar, cx, h * 0.43f, pSolar, w * .88f)
         drawBoundedText(canvas, lunar, cx, h * 0.74f, pLunar, w * .88f)
-    }
-
-    private fun drawWeekCalendarSlot(
-        canvas: Canvas,
-        w: Float,
-        h: Float,
-        density: Float,
-        config: WidgetConfig,
-        snapshot: WidgetDataSnapshot,
-        palette: GlassSurfaceRenderer.EffectiveGlassPalette
-    ) {
-        val allCols = snapshot.weekCalendarColumns
-        if (allCols.size < 7) return
-
-        val useSeven = config.weekCalendarDayCount >= 7 && w >= 190f * density
-        val cols = when {
-            useSeven -> allCols.take(7)
-            w >= 105f * density -> allCols.subList(1, 6)
-            else -> allCols.subList(2, 5)
-        }
-        val colCount = cols.size
-        val colW = w / colCount.toFloat()
-
-        // Top subtle hairline divider
-        val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.STROKE
-            strokeWidth = (0.8f * density).coerceAtLeast(1f)
-            color = ColorUtils.setAlphaComponent(palette.primaryTextArgb, 48)
-        }
-        canvas.drawLine(w * 0.04f, 1.5f * density, w * 0.96f, 1.5f * density, linePaint)
-
-        cols.forEachIndexed { idx, col ->
-            val left = idx * colW
-            val cx = left + colW * 0.5f
-            val padX = (2f * density).coerceAtMost(colW * 0.08f)
-            val topY = 4f * density
-            val botY = h - 3f * density
-
-            if (col.isToday) {
-                val pillRect = RectF(left + padX, topY, left + colW - padX, botY)
-                val corner = (10f * density).coerceAtMost(min(pillRect.width(), pillRect.height()) * 0.34f)
-                val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    style = Paint.Style.FILL
-                    shader = LinearGradient(
-                        pillRect.left, pillRect.top, pillRect.left, pillRect.bottom,
-                        ColorUtils.setAlphaComponent(palette.primaryTextArgb, 56),
-                        ColorUtils.setAlphaComponent(palette.accentTextArgb, 42),
-                        Shader.TileMode.CLAMP
-                    )
-                }
-                canvas.drawRoundRect(pillRect, corner, corner, bgPaint)
-
-                val rimPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    style = Paint.Style.STROKE
-                    strokeWidth = (1.1f * density).coerceAtLeast(1.2f)
-                    color = ColorUtils.setAlphaComponent(palette.accentTextArgb, 185)
-                }
-                canvas.drawRoundRect(pillRect, corner, corner, rimPaint)
-            }
-
-            val weekdayStr = if (col.isToday && !col.weekdayShortVi.contains("NAY", ignoreCase = true)) {
-                "${col.weekdayShortVi}•NAY"
-            } else {
-                col.weekdayShortVi
-            }
-            val weekdayPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                textAlign = Paint.Align.CENTER
-                color = if (col.isToday) palette.primaryTextArgb else palette.secondaryTextArgb
-                typeface = resolveTypeface(config.fontStyle, bold = col.isToday)
-                textSize = fitTextSize(
-                    text = weekdayStr,
-                    paint = this,
-                    maxWidth = colW * 0.86f,
-                    preferredSize = min(h * 0.20f, 9.2f * density),
-                    minSize = 6.2f * density
-                )
-            }
-            val solarPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                textAlign = Paint.Align.CENTER
-                color = palette.primaryTextArgb
-                typeface = resolveTypeface(config.fontStyle, bold = true)
-                textSize = min(h * 0.30f, 14f * density).coerceAtLeast(9f * density)
-            }
-            val lunarPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                textAlign = Paint.Align.CENTER
-                color = if (col.isToday) palette.accentTextArgb else ColorUtils.setAlphaComponent(palette.secondaryTextArgb, 210)
-                typeface = resolveTypeface(config.fontStyle, bold = col.isToday)
-                textSize = fitTextSize(
-                    text = col.lunarDayMonthString,
-                    paint = this,
-                    maxWidth = colW * 0.88f,
-                    preferredSize = min(h * 0.18f, 8.2f * density),
-                    minSize = 5.8f * density
-                )
-            }
-
-            val boxH = botY - topY
-            drawBoundedText(canvas, weekdayStr, cx, topY + boxH * 0.28f, weekdayPaint, colW * .86f)
-            drawBoundedText(canvas, col.solarDayString, cx, topY + boxH * 0.62f, solarPaint, colW * .86f)
-            if (config.showLunarDate && h >= 27f * density) {
-                drawBoundedText(canvas, col.lunarDayMonthString, cx, topY + boxH * 0.88f, lunarPaint, colW * .86f)
-            }
-        }
     }
 
     private fun drawWeatherSlot(

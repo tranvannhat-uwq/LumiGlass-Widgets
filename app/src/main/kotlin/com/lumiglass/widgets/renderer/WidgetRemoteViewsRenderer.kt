@@ -913,6 +913,88 @@ object WidgetRemoteViewsRenderer {
         }
     }
 
+    private fun buildCustomWeekCalendar(
+        context: Context,
+        widthDp: Int,
+        heightDp: Int,
+        config: WidgetConfig,
+        snapshot: WidgetDataSnapshot,
+        darkGlass: Boolean
+    ): RemoteViews {
+        val views = RemoteViews(context.packageName, R.layout.include_week_calendar_strip)
+        val columns = snapshot.weekCalendarColumns
+        if (columns.size < CALENDAR_COLUMN_VIEW_IDS.size) {
+            views.setViewVisibility(R.id.widget_week_strip_container, View.GONE)
+            return views
+        }
+
+        val visibleCount = when {
+            config.weekCalendarDayCount >= 7 && widthDp >= 190 -> 7
+            widthDp >= 105 -> 5
+            else -> 3
+        }
+        val first = (CALENDAR_COLUMN_VIEW_IDS.size - visibleCount) / 2
+        val visibleIndices = first until first + visibleCount
+        val showLunar = config.showLunarDate && heightDp >= 30 && widthDp >= visibleCount * 21
+        val metrics = context.resources.displayMetrics
+        val density = metrics.density
+        val margin = (4 * density).toInt()
+        views.setViewPadding(R.id.widget_week_strip_container, margin, 0, margin, 0)
+
+        val weekdayPx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 11f, metrics)
+        val solarPx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 17f, metrics)
+        val lunarPx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 10f, metrics)
+        val labelColor = if (darkGlass) 0xFFDCE7F6.toInt() else 0xFF344761.toInt()
+        val solarColor = if (darkGlass) 0xFFFFFFFF.toInt() else 0xFF142137.toInt()
+        val todayColor = if (darkGlass) 0xFFB8E4FF.toInt() else 0xFF104E7A.toInt()
+
+        val normal = Paint().apply { typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL) }
+        val bold = Paint().apply { typeface = Typeface.create("sans-serif", Typeface.BOLD) }
+        fun lineHeight(paint: Paint, size: Float): Float {
+            paint.textSize = size
+            val font = paint.fontMetrics
+            return font.descent - font.ascent
+        }
+        val lineSum = lineHeight(normal, weekdayPx) + lineHeight(bold, solarPx) +
+            if (showLunar) lineHeight(normal, lunarPx) else 0f
+        val maxWidth = visibleIndices.maxOf { index ->
+            val day = columns[index]
+            normal.textSize = weekdayPx
+            bold.textSize = solarPx
+            val width = maxOf(normal.measureText(day.weekdayShortVi), bold.measureText(day.solarDayString))
+            normal.textSize = lunarPx
+            if (showLunar) maxOf(width, normal.measureText(day.lunarDayMonthString)) else width
+        }.coerceAtLeast(1f)
+        val scale = minOf(
+            (config.textScale * config.calendarStripScale).coerceIn(.60f, 1.45f),
+            (heightDp - 8).coerceAtLeast(1) * density / lineSum,
+            ((widthDp - 8f) / visibleCount - 4).coerceAtLeast(1f) * density / maxWidth
+        )
+
+        CALENDAR_COLUMN_VIEW_IDS.forEachIndexed { index, ids ->
+            val visible = index in visibleIndices
+            views.setViewVisibility(ids.boxId, if (visible) View.VISIBLE else View.GONE)
+            if (!visible) return@forEachIndexed
+            val day = columns[index]
+            views.setTextViewText(ids.weekdayId, day.weekdayShortVi)
+            views.setTextViewText(ids.solarId, day.solarDayString)
+            views.setTextViewTextSize(ids.weekdayId, TypedValue.COMPLEX_UNIT_PX, weekdayPx * scale)
+            views.setTextViewTextSize(ids.solarId, TypedValue.COMPLEX_UNIT_PX, solarPx * scale)
+            views.setTextColor(ids.weekdayId, if (day.isToday) todayColor else labelColor)
+            views.setTextColor(ids.solarId, solarColor)
+            views.setInt(ids.boxId, "setBackgroundResource", if (day.isToday) R.drawable.bg_glass_today_pill else 0)
+            views.setContentDescription(ids.weekdayId,
+                if (day.isToday) "Hôm nay, ${day.weekdayShortVi}" else null)
+            views.setViewVisibility(ids.lunarId, if (showLunar) View.VISIBLE else View.GONE)
+            if (showLunar) {
+                views.setTextViewText(ids.lunarId, day.lunarDayMonthString)
+                views.setTextViewTextSize(ids.lunarId, TypedValue.COMPLEX_UNIT_PX, lunarPx * scale)
+                views.setTextColor(ids.lunarId, if (day.isToday) todayColor else labelColor)
+            }
+        }
+        return views
+    }
+
     private fun applyTypographySpans(
         text: String,
         config: WidgetConfig,
@@ -1003,20 +1085,20 @@ object WidgetRemoteViewsRenderer {
     fun customSlotContainerId(index: Int): Int = CUSTOM_SLOT_VIEW_IDS[index].containerId
 
     private data class CustomSlotViewIds(
-        val slotId: String,
         val containerId: Int,
         val bitmapId: Int,
-        val clockId: Int
+        val clockId: Int,
+        val calendarId: Int
     )
 
     private val CUSTOM_SLOT_VIEW_IDS = listOf(
-        CustomSlotViewIds(WidgetSlotBlueprints.SLOT_0, R.id.custom_slot_0_container, R.id.custom_slot_0_bitmap, R.id.custom_slot_0_clock),
-        CustomSlotViewIds(WidgetSlotBlueprints.SLOT_1, R.id.custom_slot_1_container, R.id.custom_slot_1_bitmap, R.id.custom_slot_1_clock),
-        CustomSlotViewIds(WidgetSlotBlueprints.SLOT_2, R.id.custom_slot_2_container, R.id.custom_slot_2_bitmap, R.id.custom_slot_2_clock),
-        CustomSlotViewIds(WidgetSlotBlueprints.SLOT_3, R.id.custom_slot_3_container, R.id.custom_slot_3_bitmap, R.id.custom_slot_3_clock),
-        CustomSlotViewIds(WidgetSlotBlueprints.SLOT_4, R.id.custom_slot_4_container, R.id.custom_slot_4_bitmap, R.id.custom_slot_4_clock),
-        CustomSlotViewIds(WidgetSlotBlueprints.SLOT_5, R.id.custom_slot_5_container, R.id.custom_slot_5_bitmap, R.id.custom_slot_5_clock),
-        CustomSlotViewIds(WidgetSlotBlueprints.SLOT_6, R.id.custom_slot_6_container, R.id.custom_slot_6_bitmap, R.id.custom_slot_6_clock)
+        CustomSlotViewIds(R.id.custom_slot_0_container, R.id.custom_slot_0_bitmap, R.id.custom_slot_0_clock, R.id.custom_slot_0_calendar),
+        CustomSlotViewIds(R.id.custom_slot_1_container, R.id.custom_slot_1_bitmap, R.id.custom_slot_1_clock, R.id.custom_slot_1_calendar),
+        CustomSlotViewIds(R.id.custom_slot_2_container, R.id.custom_slot_2_bitmap, R.id.custom_slot_2_clock, R.id.custom_slot_2_calendar),
+        CustomSlotViewIds(R.id.custom_slot_3_container, R.id.custom_slot_3_bitmap, R.id.custom_slot_3_clock, R.id.custom_slot_3_calendar),
+        CustomSlotViewIds(R.id.custom_slot_4_container, R.id.custom_slot_4_bitmap, R.id.custom_slot_4_clock, R.id.custom_slot_4_calendar),
+        CustomSlotViewIds(R.id.custom_slot_5_container, R.id.custom_slot_5_bitmap, R.id.custom_slot_5_clock, R.id.custom_slot_5_calendar),
+        CustomSlotViewIds(R.id.custom_slot_6_container, R.id.custom_slot_6_bitmap, R.id.custom_slot_6_clock, R.id.custom_slot_6_calendar)
     )
 
     private fun buildCustomSlotsRemoteViews(
@@ -1079,8 +1161,18 @@ object WidgetRemoteViewsRenderer {
             val ids = CUSTOM_SLOT_VIEW_IDS.getOrNull(idx) ?: return@forEachIndexed
             val contentType = WidgetSlotBlueprints.slotContent(config, slotDef.slotId)
             val (slotW, slotH) = bounds[idx]
+            val isCalendar = contentType == SlotContentType.WEEK_CALENDAR
+            views.removeAllViews(ids.calendarId)
+            views.setViewVisibility(ids.calendarId, if (isCalendar) View.VISIBLE else View.GONE)
 
-            if (contentType == SlotContentType.CLOCK) {
+            if (isCalendar) {
+                views.setViewVisibility(ids.bitmapId, View.GONE)
+                views.setViewVisibility(ids.clockId, View.GONE)
+                views.setInt(ids.calendarId, "setBackgroundResource",
+                    if (palette.isDarkGlass) R.drawable.bg_widget_calendar_dark else R.drawable.bg_widget_calendar_light)
+                views.addView(ids.calendarId,
+                    buildCustomWeekCalendar(context, slotW, slotH, config, snapshot, palette.isDarkGlass))
+            } else if (contentType == SlotContentType.CLOCK) {
                 views.setViewVisibility(ids.bitmapId, View.GONE)
                 views.setViewVisibility(ids.clockId, View.VISIBLE)
 
